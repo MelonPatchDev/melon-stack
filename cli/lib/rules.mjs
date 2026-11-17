@@ -210,3 +210,29 @@ export function groupByArea(issues) {
   }
   return groups;
 }
+
+/** PRs an issue says introduced it: "Caused by: #12" (also "Regressed in", "Introduced in"). */
+export function causedBy(body) {
+  const out = new Set();
+  for (const m of (body ?? '').matchAll(/^\s*[-*]?\s*\**(?:caused by|regressed in|introduced in)\**:?\**\s*(.+)$/gim)) {
+    for (const n of m[1].matchAll(/#(\d+)/g)) out.add(Number(n[1]));
+  }
+  return [...out];
+}
+
+/**
+ * Escaped defects per tier: of `merged` PRs ([{ number, labels }]), which ones a later issue
+ * ([{ number, body }]) names in "Caused by". Returns { s|m|h|?: { merged, escaped: [{ pr, issues }] } }.
+ */
+export function escapeReport(merged, issues) {
+  const causes = new Map();
+  for (const i of issues) for (const p of causedBy(i.body)) causes.set(p, [...(causes.get(p) ?? []), i.number]);
+  const out = {};
+  for (const p of merged) {
+    const tier = tierFromLabels(p.labels).tier ?? '?';
+    const row = (out[tier] ??= { merged: 0, escaped: [] });
+    row.merged++;
+    if (causes.has(p.number)) row.escaped.push({ pr: p.number, issues: causes.get(p.number) });
+  }
+  return out;
+}

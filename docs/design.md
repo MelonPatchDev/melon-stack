@@ -73,6 +73,8 @@ Every issue and PR carries exactly one tier label.
 ### The builder and reviewer agree what the task means
 1. **Test plan.** The reviewer reads the issue and the code it touches **on its own**, and posts a `TEST PLAN` comment on the issue: the cases that must pass, each with its kind of test (unit, property-based, UI assertion, golden). For H it first verifies the brief's claims against the code, citing `file:line`, and computes golden values by hand.
 2. **Agreement.** The builder posts `PLAN AGREED`, or lists only where it reads the issue differently. One exchange settles most differences; the orchestrator settles the rest by posting `PLAN AGREED (settled by orchestrator)`.
+
+   **Nobody waits inside a turn.** A background agent can't see a new comment until it's woken, and polling `gh` costs a call each time. So each agent ends its turn naming what it waits for (`READY FOR PLAN #n`, `TEST PLAN POSTED #n`), and the orchestrator relays by resuming it. Builder and reviewer still start together: the builder does its no-code steps (understand, branch, draft PR, self-grill) while the reviewer writes the plan.
 3. **Build.**
    - The builder self-grills the design and records each decision with its basis.
    - It checkpoints the hard-to-reverse choices the brief didn't settle (schema, shared contracts, glossary terms, reversing a decision).
@@ -128,7 +130,11 @@ The codebase changes constantly, so docs that record *how it got here* go stale 
 2. a ground rule or a line in a reference doc;
 3. or nowhere, if the code already makes it obvious.
 
-Then its entry leaves the log. The builder names each graduation in the PR (`D3 → foo.test.ts:42`), and the reviewer checks it's real. Reversal protection is mostly tests, which no reviewer can forget to check. The reasoning stays on the issue or PR that argued it, one `git blame` away.
+Then its entry leaves the log. The builder names each graduation in the PR (`D3 → src/foo.test.ts:42`). **The mechanics are scripted, because they're orchestrator bookkeeping that slips late in a long session:**
+- `melon gate` fails a PR that closes a work item while an open decision-log entry for it has no `D<n> →` line, or when a graduation names a file or line that isn't in the PR head.
+- `melon merge` removes the graduated entries from the log.
+
+What a script can't judge, whether the test really fails if the decision is reversed, is the reviewer's job. Reversal protection is mostly tests, which no reviewer can forget to check. The reasoning stays on the issue or PR that argued it, one `git blame` away.
 
 No ADRs, decision files, committed specs, roadmaps or enforcement tables in the repo.
 
@@ -144,6 +150,8 @@ No ADRs, decision files, committed specs, roadmaps or enforcement tables in the 
 `melon ledger <pr>` reads Claude Code's session transcripts, counts each API call once, attributes them to the PR's issues, and reports raw counts plus an input-equivalent total (cache reads 0.1×, cache writes 1.25× or 2×, at API list prices). Attribution works for subagents described as `builder #<n>` / `reviewer #<n>`, and for sessions on a branch named `<n>-…`. `melon merge` writes the measurement into the daily log.
 
 Transcripts exist only on the machine where a session ran, so run the ledger there. Compare per-PR totals before and after adoption; that decides whether this design works.
+
+**Cost is half the measurement.** S skips review and M uses a cheaper reviewer, so a falling ledger could just mean defects are getting through. A bug traced to a merged PR carries `Caused by: #<pr>`. `melon merge` tags the fix in the daily log ("fixes an escape from #12 (tier:m)"), and `melon escapes` reports, per tier, how many recently merged PRs later needed a fix. A tier whose escape rate climbs gets a higher floor or a stronger reviewer. Together, the two numbers say whether the savings are real.
 
 ## Parallelism and hotspots
 - Up to 3 builders run on parallel work. That's the main payoff of agents.

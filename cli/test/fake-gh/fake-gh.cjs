@@ -34,7 +34,8 @@ if (group === 'api') {
 } else if (group === 'pr' && cmd === 'view') {
   out(pick(prJson(pr()), flag('json')));
 } else if (group === 'pr' && cmd === 'list') {
-  out(Object.values(state.prs).filter((p) => p.state === 'OPEN').map((p) => pick(prJson(p), flag('json'))));
+  const want = (flag('state') ?? 'open').toUpperCase();
+  out(Object.values(state.prs).filter((p) => p.state === want).map((p) => pick(prJson(p), flag('json'))));
 } else if (group === 'pr' && cmd === 'comment') {
   pr().comments.push({ body: flag('body'), createdAt: now() });
   save();
@@ -49,6 +50,7 @@ if (group === 'api') {
   const p = pr();
   if (flag('match-head-commit') !== p.headRefOid) fail('head moved');
   p.state = 'MERGED';
+  p.mergedAt = now();
   p.mergedSubject = flag('subject');
   save();
 } else if (group === 'issue' && cmd === 'view') {
@@ -57,7 +59,7 @@ if (group === 'api') {
   const label = flag('label');
   out(
     Object.values(state.issues)
-      .filter((i) => i.state === 'OPEN' && (!label || i.labels.includes(label)))
+      .filter((i) => (flag('state') === 'all' || i.state === 'OPEN') && (!label || i.labels.includes(label)))
       .map((i) => pick(issueJson(i), flag('json'))),
   );
 } else if (group === 'issue' && cmd === 'create') {
@@ -70,6 +72,7 @@ if (group === 'api') {
   save();
 } else if (group === 'issue' && cmd === 'edit') {
   issue().labels.push(...flags('add-label'));
+  if (flag('body') !== undefined) issue().body = flag('body');
   save();
 } else if (group === 'issue' && cmd === 'close') {
   issue().state = 'CLOSED';

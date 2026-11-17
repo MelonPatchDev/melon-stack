@@ -15,13 +15,16 @@ import {
   tierFromLabels,
   todoViolations,
 } from '../lib/rules.mjs';
+import { graduations, graduationTarget } from '../lib/records.mjs';
 import { gh, tryRun } from '../lib/sh.mjs';
+import { readDecisionLog } from './records.mjs';
 
 export const help = `melon gate <pr> [--fix] [--json]
   Checks a PR against the mechanical merge conditions:
     tier label (raised automatically: H for systemic paths or edits to rule docs; M for M paths,
     held hotspots or code churn over tiers.sMaxChurn), needs-owner/parked, Closes #n, required PR
-    sections, TODOs without an issue number, hotspot clashes and the migration slot against
+    sections, TODOs without an issue number, decisions graduated (every open decision-log entry
+    for a closed issue has a "D<n> → <where>" line, and each file:line it names exists at the head), hotspot clashes and the migration slot against
     other open PRs, a clean merge with main, and evidence for its tier:
       S: a "MELON CHECK: PASS @ <sha>" comment covering the head (melon check --record)
       M/H: TEST PLAN + PLAN AGREED comments, and "REVIEW VERDICT: APPROVE @ <sha>" covering the head
@@ -38,6 +41,46 @@ function covers(sha, head, cwd, main) {
   if (head.startsWith(sha) || sha.startsWith(head)) return true;
   const r = tryRun('git', ['rev-list', '--no-merges', `${sha}..${head}`, `^origin/${main}`], { cwd });
   return r.status === 0 && r.stdout === '';
+}
+
+/** Lines in `path` at `head`, or -1 when the file isn't there. */
+function linesAt(head, path, cwd) {
+  const r = tryRun('git', ['cat-file', '-p', `${head}:${path}`], { cwd });
+  return r.status === 0 ? r.stdout.split('\n').length : -1;
+}
+
+/**
+ * Decisions graduate: each open decision-log entry for an issue this PR closes must be named in a
+ * "D<n> → <where>" line, and a file (and line) it names must exist at the head. Merge then
+ * removes those entries from the log.
+ */
+function checkGraduations({ pr, issues, head, cwd, config, add, warn }) {
+  const grads = graduations(pr.body);
+  const log = readDecisionLog(config);
+  if (log.error) {
+    if (grads.size) warn('decisions graduate', `decision log not read: ${log.error}`);
+    return;
+  }
+  const owed = log.entries.filter((e) => e.for.some((n) => issues.includes(n))).map((e) => e.id);
+  const missing = owed.filter((id) => !grads.has(id));
+  const bad = [];
+  for (const [id, text] of grads) {
+    if (!text) {
+      bad.push(`${id} names nowhere`);
+      continue;
+    }
+    const t = graduationTarget(text);
+    if (!t) continue; // a ground rule, or "nothing: the code makes it obvious"; the reviewer checks it
+    const n = linesAt(head, t.path, cwd);
+    if (n < 0) bad.push(`${id} → ${t.path} isn't in the PR`);
+    else if (t.line && t.line > n) bad.push(`${id} → ${t.path}:${t.line} is past the end (${n} lines)`);
+  }
+  const problems = [
+    ...(missing.length ? [`${missing.join(', ')} open in the decision log (${log.where}) for this work: add "D<n> → <where it now lives>" under Decisions`] : []),
+    ...bad,
+  ];
+  if (!owed.length && !grads.size) return;
+  add(problems.length === 0, 'decisions graduate', problems.length ? problems.join('; ') : [...grads.keys()].join(', '));
 }
 
 export function evaluate(number, config, { fix = false } = {}) {
@@ -136,6 +179,8 @@ export function evaluate(number, config, { fix = false } = {}) {
       }
       if (conflicts.length) warn('no conflict with other open PRs', `conflicts with ${conflicts.join('; ')}: merge in dependency order and resolve at the second merge`);
     }
+
+    checkGraduations({ pr, issues, head, cwd, config, add, warn });
   }
 
   // Evidence for the tier.

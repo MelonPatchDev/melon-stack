@@ -1,6 +1,16 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { dependencies, readiness, record, recordLabels, resolveRecords } from '../lib/records.mjs';
+import {
+  decisionEntries,
+  dependencies,
+  graduations,
+  graduationTarget,
+  readiness,
+  record,
+  recordLabels,
+  removeEntries,
+  resolveRecords,
+} from '../lib/records.mjs';
 
 test('records default to GitHub and merge per-repo overrides', () => {
   const r = resolveRecords({ records: { decisionLog: { label: 'adr-open' }, direction: { kind: 'file', path: 'ROADMAP.md' } } });
@@ -32,4 +42,44 @@ test('readiness: ready when every dependency is closed; unlocks is the reverse m
   assert.deepEqual(ready.map((i) => i.number), [2, 3]);
   assert.deepEqual(waiting.map((w) => [w.issue.number, w.on]), [[1, [2]]]);
   assert.deepEqual(unlocks.get(2), [1]);
+});
+
+const LOG = `# Decision log
+<!-- | D9 | commented out | x | x | x | #1 | -->
+| # | Decision | Basis | Argued in | Graduates to | For |
+|---|---|---|---|---|---|
+| D1 | money is integer cents | ground rule 2 | #40 | a type | #41, #42 |
+| D2 | unknown stays null | principle 13 | #40 | a test | #43 |
+`;
+
+test('decisionEntries: table rows only, with the work items each is for', () => {
+  assert.deepEqual(decisionEntries(LOG), [
+    { id: 'D1', for: [41, 42] },
+    { id: 'D2', for: [43] },
+  ]);
+  assert.deepEqual(decisionEntries('| D1 | <one line> | b | #<issue> | g | #<work item> |'), [{ id: 'D1', for: [] }]);
+});
+
+test('removeEntries drops only the graduated rows', () => {
+  const out = removeEntries(LOG, ['D1']);
+  assert.doesNotMatch(out, /\| D1 \|/);
+  assert.match(out, /\| D2 \| unknown stays null/);
+  assert.match(out, /^\| # \| Decision/m);
+});
+
+test('graduations: "D<n> → where" and "->" lines, not inside comments', () => {
+  const body = '## Decisions\n- D1 → `src/money.test.ts:42`\nD2 -> nothing: the code makes it obvious\n<!-- D7 → x.ts -->\n- D3 →\n';
+  assert.deepEqual([...graduations(body)], [
+    ['D1', '`src/money.test.ts:42`'],
+    ['D2', 'nothing: the code makes it obvious'],
+    ['D3', ''],
+  ]);
+});
+
+test('graduationTarget: files and lines, but not prose or abbreviations', () => {
+  assert.deepEqual(graduationTarget('`src/money.test.ts:42`'), { path: 'src/money.test.ts', line: 42 });
+  assert.deepEqual(graduationTarget('ground rule in CLAUDE.md.'), { path: 'CLAUDE.md', line: null });
+  assert.deepEqual(graduationTarget('type Money (./packages/core/money.ts:3-9)'), { path: 'packages/core/money.ts', line: 3 });
+  assert.equal(graduationTarget('nothing: the code makes it obvious, e.g. the type'), null);
+  assert.equal(graduationTarget('ground rule 4'), null);
 });

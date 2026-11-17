@@ -9,7 +9,7 @@ The answer it settles on:
 - **Scale process to risk.** A docs fix doesn't get the same review as a migration. Most PRs get a cheaper review; only changes that could break something systemic get the expensive one.
 - **Turn judgment into tests.** The reviewer writes the test plan *before* the code exists, and the builder writes those tests first. Review then checks a plan instead of re-deriving the code.
 - **Script the mechanics.** Labels, hotspots, migration slots, CI and the daily log are handled by a small CLI, not by agents reasoning about process.
-- **Measure what it costs.** A ledger reads Claude Code's own session transcripts, so you know what each PR really cost, not what agents estimate.
+- **Measure what it costs, and what it lets through.** A ledger reads Claude Code's own session transcripts, so you know what each PR really cost, not what agents estimate. An escape count tracks how often each tier's PRs later needed a fix, so you can tell whether cheaper review is really safe.
 - **The code is the documentation.** Plans, specs and decisions live in your tracker and look forward only. When work merges, each decision graduates into a test, type or rule, and leaves the log. The repo holds only docs that describe what's true now.
 
 It's a Claude Code plugin: skills, playbooks, two agent definitions, templates, and `melon`, a zero-dependency Node CLI.
@@ -100,10 +100,11 @@ Companions we recommend but don't bundle: Anthropic's [`frontend-design`](https:
 | Command | Does |
 |---|---|
 | `melon check [--full] [--record <pr>]` | runs the checks for the changed paths; prints **only failures**; `--record` posts the pass, pinned to the commit |
-| `melon gate <pr> [--fix]` | the mechanical merge conditions: tier, PR sections, TODOs, hotspots, migration slot, clean merge, test plan and verdict |
+| `melon gate <pr> [--fix]` | the mechanical merge conditions: tier, PR sections, TODOs, hotspots, migration slot, clean merge, decisions graduated, test plan and verdict |
 | `melon focus <pr> [--diff]` | the files a reviewer must read in depth, and their diff alone |
-| `melon merge <pr>` | gate → CI per tier → squash → daily-log line with the measured ledger → batch CI on `main` |
+| `melon merge <pr>` | gate → CI per tier → squash → daily-log line with the measured ledger → graduated decisions leave the log → batch CI on `main` |
 | `melon ledger <pr>` | what the PR really cost, by role, from the session transcripts |
+| `melon escapes [--since <date>]` | per tier, how many merged PRs later needed a fix (`Caused by: #<pr>`) |
 | `melon status` | the live board: in flight, ready (dependencies closed), what each item unlocks, hotspots |
 | `melon records [--check]` | where each record lives in this repo (decision log, owner list, direction, …) |
 | `melon batch [--create]` | groups small bugs by area into one maintenance issue |

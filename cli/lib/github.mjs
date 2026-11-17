@@ -73,3 +73,12 @@ export function ciState(rollup) {
   if (states.every((s) => ['SUCCESS', 'NEUTRAL', 'SKIPPED'].includes(s))) return 'success';
   return 'pending';
 }
+
+export function getIssue(number, fields = 'number,title,body,labels,state') {
+  const i = ghJson(['issue', 'view', String(number), '--json', fields]);
+  return { ...i, labels: labelNames(i.labels) };
+}
+
+export function editIssueBody(number, body) {
+  gh(['issue', 'edit', String(number), '--body', body]);
+}

@@ -10,7 +10,7 @@
    - Cover each acceptance criterion, the edge cases each persona would hit, and the failure modes (empty, unknown, missing data, unauthorised).
    - **Formula code:** compute golden values by hand for 2–4 small cases and put them in the plan.
    - Name anything you think the issue leaves unclear. The builder answers it in its reply.
-4. Wait. The builder replies `PLAN AGREED` or `PLAN DIFFERS`. Settle the differences in one exchange; the orchestrator decides anything left.
+4. **End your turn** with one line: `TEST PLAN POSTED #<n>`. Don't wait inside the turn or poll for the builder's reply; the orchestrator wakes you. If the builder replies `PLAN DIFFERS`, the orchestrator brings you its points: answer each in one comment, then end your turn again. Anything still open is the orchestrator's call.
 
 ## Phase 2: the verdict (when the orchestrator sends the PR)
 1. Run `melon focus <pr>`. It lists the **focus files** (systemic paths, rule edits, held hotspots).
@@ -23,7 +23,7 @@
    - auth guards on new routes;
    - glossary terms;
    - the rules doc updated together with any rule or formula change;
-   - the Decisions with their bases, and **each graduation real**: `D<n> → <where>` points at a test, type or rule that would fail or object if the decision were reversed;
+   - the Decisions with their bases, and **each graduation real**: `D<n> → <where>` points at a test, type or rule that would fail or object if the decision were reversed. `melon gate` only checks that the file and line exist; whether they actually protect the decision is your call;
    - **no silent reversal:** the change contradicts no open decision-log entry, ground rule or rules-doc line without listing it under Decisions (with `owner-review`). A PR that edits or deletes an existing test's assertion is reversing whatever that test protects; it must say so;
    - Impact claims true against the code. An overstated or missing UX effect is blocking.
    - **Fragment check:** could this have been part of another open or planned PR? One issue should be one complete slice.

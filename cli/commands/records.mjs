@@ -1,8 +1,31 @@
 // melon records: where each record lives in this repo, as a table agents (and the agent map) use.
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { listOpenIssues } from '../lib/github.mjs';
-import { RECORDS, resolveRecords, SUPPORTED } from '../lib/records.mjs';
+import { decisionEntries, record, RECORDS, resolveRecords, SUPPORTED } from '../lib/records.mjs';
+
+/**
+ * The decision log, read for gate and merge: { where, body, entries, issue? } or { error }.
+ * An issue log can be edited by the CLI; a file log is in the repo and changes through a PR.
+ */
+export function readDecisionLog(config) {
+  let r;
+  try {
+    r = record(config, 'decisionLog');
+  } catch (err) {
+    return { error: err.message };
+  }
+  if (r.kind === 'file') {
+    const file = join(config.root, r.path);
+    if (!existsSync(file)) return { error: `${r.path} is missing` };
+    const body = readFileSync(file, 'utf8');
+    return { where: r.path, body, entries: decisionEntries(body) };
+  }
+  if (r.kind !== 'github-issue') return { error: `records.decisionLog.kind "${r.kind}" can't hold a decision log` };
+  const found = listOpenIssues(r.label, { body: true });
+  if (found.length !== 1) return { error: `${found.length} open issues labelled \`${r.label}\` (want 1); run \`melon records --check\`` };
+  return { where: `#${found[0].number}`, issue: found[0].number, body: found[0].body ?? '', entries: decisionEntries(found[0].body) };
+}
 
 export const help = `melon records [--check]
   Prints where each record lives (from "records" in melon.config.json, GitHub by default), as a

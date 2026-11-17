@@ -53,6 +53,15 @@ Override only what differs, for example `"records": { "ownerList": { "label": "o
 | `PLAN AGREED` | builder | gate (M/H) |
 | `REVIEW VERDICT: APPROVE @ <sha>` / `CHANGES @ <sha>` | reviewer, on the PR | gate (M/H); the latest counts |
 
+## Lines the CLI reads in bodies
+| Line | Where | Read by |
+|---|---|---|
+| `Closes #n` | PR body | gate, status, ledger, merge |
+| `Depends on: #n` (or `Blocked by:`, `After:`) | work item | status |
+| `\| D<n> \| … \| #<work item> \|` | decision-log record, a table row; the last cell names the work items | gate, merge |
+| `D<n> → <where>` (or `->`) | PR body, under Decisions | gate (a file it names must exist at the head, and the line if given); merge removes `D<n>` from the decision log |
+| `Caused by: #<pr>` (or `Regressed in`, `Introduced in`) | a bug issue | merge (tags the fix in the daily log), escapes |
+
 A recorded SHA covers the PR head when the head is that commit, or when the PR's only commits since are merges; commits that arrive from `main` by merging it in don't count, so merging `main` doesn't cost a new review.
 
 ## Local state

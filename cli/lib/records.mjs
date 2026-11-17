@@ -79,3 +79,52 @@ export function readiness(openIssues) {
   }
   return { ready, waiting, unlocks };
 }
+
+// Decisions graduate: an open decision-log entry leaves the log when the PR that implements it
+// names where it now lives ("D3 → src/money.test.ts:42"). The gate checks the target exists.
+
+const stripComments = (s) => (s ?? '').replace(/<!--[\s\S]*?-->/g, '');
+
+/** Open decision-log entries: table rows starting `| D<n> |`; `for` is the work items in the last cell. */
+export function decisionEntries(logBody) {
+  const out = [];
+  for (const m of stripComments(logBody).matchAll(/^\|\s*(D\d+)\s*\|(.*)\|\s*$/gm)) {
+    const cells = m[2].split('|');
+    out.push({ id: m[1], for: [...cells[cells.length - 1].matchAll(/#(\d+)/g)].map((n) => Number(n[1])) });
+  }
+  return out;
+}
+
+/** The log body without the rows for `ids`. */
+export function removeEntries(logBody, ids) {
+  const drop = new Set(ids);
+  return (logBody ?? '')
+    .split('\n')
+    .filter((l) => !drop.has(/^\|\s*(D\d+)\s*\|/.exec(l)?.[1]))
+    .join('\n');
+}
+
+/** `D<n> → <where>` (or `->`) lines in a PR body: Map(id → target text). */
+export function graduations(body) {
+  const out = new Map();
+  for (const m of stripComments(body).matchAll(/^\s*[-*]?\s*`?(D\d+)`?\s*(?:→|->)\s*(.*)$/gm)) out.set(m[1], m[2].trim());
+  return out;
+}
+
+/**
+ * The repo file (and line) a graduation names, or null when it names none ("nothing: the code
+ * makes it obvious", "ground rule 4"). A file is a token with a slash, or name.ext with a name of
+ * two or more characters (so "e.g." isn't one).
+ */
+export function graduationTarget(text) {
+  for (const raw of (text ?? '').replace(/`/g, ' ').split(/\s+/)) {
+    const tok = raw.replace(/^[([{"']+|[)\]},;"'.]+$/g, '');
+    const m = /^([\w@.\-/]+?)(?::(\d+)(?:-\d+)?)?$/.exec(tok);
+    if (!m) continue;
+    const path = m[1].replace(/^\.\//, '');
+    const base = path.split('/').pop();
+    const ext = /^(.+)\.([A-Za-z][\w]{0,5})$/.exec(base);
+    if (path.includes('/') ? base.length > 0 : ext && ext[1].length >= 2) return { path, line: m[2] ? Number(m[2]) : null };
+  }
+  return null;
+}

@@ -2,11 +2,12 @@
 // The person or agent running it makes no quality judgment; the gate and CI do.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
-import { ciState, comment } from '../lib/github.mjs';
-import { impactSummary, ledgerLine as bodyLedger, localDate } from '../lib/rules.mjs';
+import { ciState, comment, editIssueBody, getIssue, getPr } from '../lib/github.mjs';
+import { causedBy, closedIssues, impactSummary, ledgerLine as bodyLedger, localDate, tierFromLabels } from '../lib/rules.mjs';
 import { gh, ghJson, git, tryRun } from '../lib/sh.mjs';
-import { record } from '../lib/records.mjs';
+import { graduations, record, removeEntries } from '../lib/records.mjs';
 import { evaluate } from './gate.mjs';
+import { readDecisionLog } from './records.mjs';
 import { ledgerFor, ledgerLine } from './ledger.mjs';
 
 /** The measured ledger from transcripts; never blocks a merge. */
@@ -15,6 +16,46 @@ function measuredLedger(number, config) {
     return ledgerLine(ledgerFor(number, config));
   } catch (err) {
     return `ledger unavailable: ${err.message.split('\n')[0]}`;
+  }
+}
+
+/** " · fixes an escape from #12 (tier:m)" for each closed issue with a "Caused by: #n" line. */
+function escapeTags(body) {
+  const tags = [];
+  for (const n of closedIssues(body)) {
+    let causes = [];
+    try {
+      causes = causedBy(getIssue(n, 'body').body);
+    } catch {
+      continue;
+    }
+    for (const p of causes) {
+      let tier = '?';
+      try {
+        tier = tierFromLabels(getPr(p).labels).tier ?? '?';
+      } catch {
+        // not a PR in this repo; keep the number
+      }
+      tags.push(` · fixes an escape from #${p} (tier:${tier})`);
+    }
+  }
+  return tags.join('');
+}
+
+/** After the merge, the PR's graduated decisions leave the decision log. Never fails the merge. */
+function graduate(pr, config) {
+  const ids = [...graduations(pr.body).keys()];
+  if (!ids.length) return;
+  const dl = readDecisionLog(config);
+  if (dl.error) return console.log(`Decision log not updated (${dl.error}); remove ${ids.join(', ')} by hand.`);
+  const present = ids.filter((id) => dl.entries.some((e) => e.id === id));
+  if (!present.length) return console.log(`Decision log ${dl.where}: nothing to remove for ${ids.join(', ')}.`);
+  if (!dl.issue) return console.log(`Decision log ${dl.where}: remove ${present.join(', ')} (graduated in #${pr.number}).`);
+  try {
+    editIssueBody(dl.issue, removeEntries(dl.body, present));
+    console.log(`Decision log ${dl.where}: ${present.join(', ')} graduated and removed.`);
+  } catch (err) {
+    console.log(`Decision log ${dl.where} not updated (${err.message.split('\n')[0]}); remove ${present.join(', ')} by hand.`);
   }
 }
 
@@ -27,8 +68,11 @@ export const help = `melon merge <pr> [--ledger "<text>"] [--dry-run]
      S: no PR CI; the recorded melon check stands in.
   3. Squash-merges (title + " (#n)"), pinned to the gated head, and deletes the branch.
   4. Adds "- #n <Impact first sentence> (<ledger>)" to today's daily log (records.dailyLog), creating it
-     (and closing older ones) when needed.
-  5. After ci.batchAfterSMerges S merges since the last CI that covered main, dispatches CI on
+     (and closing older ones) when needed. A closed issue with "Caused by: #p" adds
+     " · fixes an escape from #p (tier:x)" (melon escapes counts them).
+  5. Removes the PR's graduated decisions ("D<n> → …" under Decisions) from the decision log
+     when it's an issue; a file log is listed for the orchestrator to edit.
+  6. After ci.batchAfterSMerges S merges since the last CI that covered main, dispatches CI on
      main. An M/H merge resets the count, because its CI ran on a head containing main.
   --ledger   the ledger text; otherwise a "Ledger:" line in the PR body, otherwise the measured
              ledger from session transcripts (melon ledger <pr> --line)
@@ -116,7 +160,7 @@ export function main(args, config) {
 
   const summary = impactSummary(pr.body, config.pr.impactLabel) ?? pr.title;
   const ledger = args.flags.ledger ?? bodyLedger(pr.body) ?? measuredLedger(number, config);
-  const line = `- #${number} ${summary} (${ledger})`;
+  const line = `- #${number} ${summary} (${ledger})${escapeTags(pr.body)}`;
 
   if (args.flags['dry-run']) {
     console.log(`Dry run: would squash-merge #${number} (tier:${tier}) at ${pr.headRefOid.slice(0, 9)} and log:\n${line}`);
@@ -127,6 +171,7 @@ export function main(args, config) {
   console.log(`Merged #${number} (tier:${tier}).`);
   const log = dailyLog(config, line);
   console.log(`Logged on #${log}.`);
+  graduate(pr, config);
 
   const file = statePath(config);
   const state = readState(file);

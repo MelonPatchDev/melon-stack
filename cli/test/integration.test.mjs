@@ -379,3 +379,72 @@ test('merge writes the daily log where records.dailyLog says', () => {
   const log = Object.values(t.state().issues).find((i) => i.labels.includes('merge-log'));
   assert.match(log.title, /^Merges \d{4}-\d{2}-\d{2}$/);
 });
+
+test('decisions graduate: gate holds the PR to its open entries; merge removes them', () => {
+  const t = setup();
+  const log = '| # | Decision | Basis | Argued in | Graduates to | For |\n|---|---|---|---|---|---|\n| D1 | b is a feature | AC1 | #108 | a test | #108 |\n| D2 | other work | AC2 | #40 | a test | #41 |\n';
+  const merge = (body) =>
+    t.setState((s) => {
+      s.issues[300].body = log;
+      s.prs[8].body = `${s.prs[8].body}\n## Decisions\n${body}\n`;
+    });
+
+  merge('');
+  let r = t.run('gate', '8');
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.out, /✗ decisions graduate — D1 open in the decision log \(#300\) for this work/);
+
+  t.setState((s) => {
+    s.prs[8].body = s.prs[8].body.replace('## Decisions\n', '## Decisions\n- D1 → `src/b.js:5`\n');
+  });
+  r = t.run('gate', '8');
+  assert.match(r.out, /✗ decisions graduate — D1 → src\/b\.js:5 is past the end \(1 lines\)/);
+
+  t.setState((s) => {
+    s.prs[8].body = s.prs[8].body.replace('src/b.js:5', 'src/b.js:1');
+  });
+  r = t.run('gate', '8');
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /✓ decisions graduate — D1/);
+
+  t.setState((s) => {
+    s.prs[8].isDraft = false;
+    s.prs[8].statusCheckRollup = [{ __typename: 'CheckRun', status: 'COMPLETED', conclusion: 'SUCCESS' }];
+  });
+  r = t.run('merge', '8', '--ledger', 'x');
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /Decision log #300: D1 graduated and removed\./);
+  const body = t.state().issues[300].body;
+  assert.doesNotMatch(body, /\| D1 \|/);
+  assert.match(body, /\| D2 \| other work/);
+});
+
+test('gate: a graduation naming a file the PR lacks fails', () => {
+  const t = setup();
+  t.setState((s) => {
+    s.prs[8].body += '\n## Decisions\n- D4 → src/nope.test.js:3\n- D5 → nothing: the type makes it obvious\n';
+  });
+  const r = t.run('gate', '8');
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.out, /✗ decisions graduate — D4 → src\/nope\.test\.js isn't in the PR$/m);
+});
+
+test('escapes: merge tags the fix in the daily log; the report counts escapes per tier', () => {
+  const t = setup();
+  t.setState((s) => {
+    s.prs[8].state = 'MERGED';
+    s.prs[8].mergedAt = new Date().toISOString();
+    s.issues[107].body = 'Totals off by one.\nCaused by: #8';
+  });
+  assert.equal(t.run('check', '--record', '7').code, 0);
+  let r = t.run('merge', '7', '--ledger', 'x');
+  assert.equal(r.code, 0, r.out);
+  const log = Object.values(t.state().issues).find((i) => i.labels.includes('daily-log'));
+  assert.match(log.comments[0].body, /^- #7 .* \(x\) · fixes an escape from #8 \(tier:m\)/);
+
+  r = t.run('escapes');
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /\| s \| 1 \| 0 \| 0% \| — \|/);
+  assert.match(r.out, /\| m \| 1 \| 1 \| 100% \| #8 → #107 \|/);
+  assert.equal(t.run('escapes', '--since', 'yesterday').code, 2);
+});

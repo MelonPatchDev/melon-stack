@@ -3,6 +3,8 @@ import { test } from 'node:test';
 import { globToRegExp, matchesAny } from '../lib/glob.mjs';
 import {
   addsMigration,
+  causedBy,
+  escapeReport,
   closedIssues,
   failureExcerpt,
   focusFiles,
@@ -212,4 +214,28 @@ test('parseArgs: value flags take the next word, others are booleans', () => {
     flags: { fix: true, ledger: 'b ~1k', min: '4' },
   });
   assert.deepEqual(parseArgs(['--full', '--record', '7']), { positional: [], flags: { full: true, record: '7' } });
+});
+
+test('causedBy: "Caused by", "Regressed in", "Introduced in" lines', () => {
+  assert.deepEqual(causedBy('Totals are off.\n**Caused by:** #12, #14\n- Regressed in #3'), [12, 14, 3]);
+  assert.deepEqual(causedBy('Seen after #12 merged'), []);
+});
+
+test('escapeReport: escape rate per tier of the PRs that caused later issues', () => {
+  const merged = [
+    { number: 1, labels: ['tier:s'] },
+    { number: 2, labels: ['tier:m'] },
+    { number: 3, labels: ['tier:m'] },
+    { number: 4, labels: [] },
+  ];
+  const issues = [
+    { number: 50, body: 'Caused by: #2' },
+    { number: 51, body: 'Caused by: #2' },
+    { number: 52, body: 'Caused by: #99' }, // merged before the window
+  ];
+  assert.deepEqual(escapeReport(merged, issues), {
+    s: { merged: 1, escaped: [] },
+    m: { merged: 2, escaped: [{ pr: 2, issues: [50, 51] }] },
+    '?': { merged: 1, escaped: [] },
+  });
 });

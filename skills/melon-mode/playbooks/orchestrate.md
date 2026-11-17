@@ -42,9 +42,15 @@ A **reviewer (M/H)** is launched at the same time:
 - "Review #<n> (tier:<t>). Phase 1: post the TEST PLAN on the issue now. Phase 2 starts when I send the PR number."
 - **Model by tier:** M gets a cheaper model. H gets the strongest, but the reviewer reads only the focus files in depth (`melon focus`).
 
-Then:
-- Set the issue to `status:building`.
-- The builder waits for `TEST PLAN`, replies `PLAN AGREED` (or lists differences), then builds. You step in only if they still disagree after one exchange: decide from the brief and the spec, and post your decision as a comment starting `PLAN AGREED (settled by orchestrator)`, so the gate sees an agreed plan.
+Then set the issue to `status:building`.
+
+**Agents never wait inside a turn; you relay.** A background agent can't see a new GitHub comment until someone wakes it, and polling `gh` burns a call each time. So:
+1. **M/H:** launch both at once. The builder does only the no-code steps (understand, branch, draft PR, self-grill) and ends its turn with `READY FOR PLAN`. The reviewer posts `TEST PLAN` and ends its turn.
+2. When both are back, resume the builder (SendMessage): "TEST PLAN is on #<n>; reply PLAN AGREED or PLAN DIFFERS, then build if agreed."
+3. **PLAN DIFFERS:** resume the reviewer with the builder's points for its one answer. Then resume the builder with that answer. If they still disagree, decide from the brief and the spec yourself, and post a comment starting `PLAN AGREED (settled by orchestrator)` so the gate sees an agreed plan.
+4. **Verdict:** resume the same reviewer with the PR number. Its phase-1 reading is still in its context, which beats a fresh reviewer re-reading the issue.
+
+An agent that ends its turn waiting on something names exactly what it's waiting for in its last line, so you know whom to wake.
 
 **A resume prompt** gives:
 - what landed since;
@@ -55,7 +61,7 @@ Then:
 - **Checkpoints:** decide them yourself, using the reasoning order (melon-mode §3). Record the decision on the PR (Decisions). Label consequential, controversial or hard-to-reverse choices `owner-review`.
 - **Owner-only actions** (money, accounts and keys, legal notices, commercial use, new third parties or new user data): label `needs-owner` and add the exact request under **Needs you** in the owner list (`templates/owner-list.md`). Build the recommended option behind config so review can still go ahead.
 - **The owner list is yours alone:** edit it in place; there are no copies elsewhere. Consequential decisions go under **Review later**. Record each answer where it applies (the work item, the decision log) before moving it to Done.
-- **New decisions** that outlive the current conversation (a checkpoint ruling, a design call that later issues depend on) get a line in the **decision log**, with where each will graduate. **When an outside source blocks the work, ask on the first confirmed failure;** don't retry for days first.
+- **New decisions** that outlive the current conversation (a checkpoint ruling, a design call that later issues depend on) get a line in the **decision log**, with where each will graduate and **the work item it's for** (`#n` in the last column). `melon gate` holds any PR that closes that work item until it names where the decision now lives. **When an outside source blocks the work, ask on the first confirmed failure;** don't retry for days first.
 - **Milestone hand-backs:** builders on medium or large briefs hand back after each milestone. Read the token count each agent reports when it stops. Under ~200k, resume the same agent with "go". Over, start a fresh one of the same role with the pickup playbook. Builders can't see their own context size; you can.
 
 ## 5. Merge
@@ -68,15 +74,16 @@ At hand-back (State "ready for gate"):
   - On a red CI run, the PR goes back to draft and to the builder.
 - **Merge in dependency order.** A hotspot file changed on `main` under an approved PR means the reviewer re-checks the affected part after `main` is merged in.
 - After merging:
-  - **graduate its decisions:** for each "D<n> → …" line in the PR's Decisions, check that the test, type or rule exists, then remove the entry from the decision log. A decision with no graduation stays open; ask why;
+  - **graduations are scripted:** `melon gate` already checked that every open decision-log entry for this work has a `D<n> → <where>` line, and that the named file and line exist. `melon merge` removes those entries from the log. You don't re-check them; the reviewer checked that each graduation really protects the decision;
   - read the PR's `Data:` line before removing its worktree or volumes;
   - set statuses;
   - if the merge changed priorities or taught something, update the direction record ("What would change the plan"), and remove finished milestones from it.
-- **If something bad lands on `main`:** revert the merge at once (`git revert` in a PR, merged through `melon merge` as S), reopen the work item, and add a line to the daily log. Fix forward in a new PR.
+- **If something bad lands on `main`:** revert the merge at once (`git revert` in a PR, merged through `melon merge` as S), reopen the work item, and open a bug issue with `Caused by: #<the bad PR>` so it counts as an escape. Fix forward in a new PR.
 
 ## 6. Audits and lessons
 - **Every 5 merges** (and before any deploy), run the `melon-audit` skill on the 1–2 audits that ran longest ago, plus its `spot-check` of one recently merged PR. Diff reviews miss ground-rule breaks that span PRs, and audits catch them. Record which ran in your hand-off.
 - **When the same review finding shows up twice,** run `melon-correct` on it.
+- **With each audit round, run `melon escapes`.** It shows, per tier, how many recently merged PRs later needed a fix (`Caused by: #<pr>` on the fixing issue). Cost alone can't tell you whether cheaper review is working; this can. If a tier's escape rate climbs (for example M escapes clustering in one area), raise that area's tier floor in `melon.config.json` or give that tier a stronger reviewer, and say why in the direction record.
 
 ## 7. Your own context
 You're the longest-lived session, so you're the costliest per call.
@@ -84,12 +91,13 @@ You're the longest-lived session, so you're the costliest per call.
 - **At ~200k tokens of context, finish the current merge, post the hand-off and stop.** The next session cold-starts from step 0. Starting fresh is cheaper than carrying the history.
 
 ## 8. Hand-off (end of every orchestrator session)
-Post `templates/handoff.md` (≤15 lines) as a comment on the direction record: in flight, next, why, open decisions, what would change the plan, last audit.
+Post `templates/handoff.md` (≤15 lines) as a comment on the direction record: in flight, next, why, open decisions, what would change the plan, last audit and escape rates.
 
 ## Traps seen in practice
 - Infrastructure checked with one test instead of the full suite.
 - A scratch file shared between agents, then overwritten.
 - A later PR reversing a recorded decision without listing it.
+- A builder polling `gh issue view` in a loop for the test plan, spending a call each time.
 - Outlines expanded from memory instead of the code on `main`.
 - Related issues designed separately, then redesigned later.
 - A hotspot changed on `main` under an approved PR, and never re-checked.
