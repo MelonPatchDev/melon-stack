@@ -45,7 +45,7 @@ Adoption changes how every agent in the repo works, so do it as one PR, on a bra
    - records instead of repo docs for plans and decisions.
 
    Keep the ground rules.
-7. **Retire duplicates.** Remove repo-local copies of skills melon-stack now provides (`grilling`, `domain-modeling`, `brainstorm`, `codebase-design`, `simplify-single`, and any local orchestration loop melon-mode replaces). Keep only skills that are truly specific to the repo. Carry any **lessons or "traps seen"** list from the old process into `melon-correct` as its first input; don't lose them.
+7. **Retire duplicates.** Remove repo-local copies of skills melon-stack provides or makes unnecessary: `grilling`, `simplify-single`, any local orchestration loop melon-mode replaces, and generic design-craft skills (spec writing, domain modeling, module design), whose few opinions now live in `melon-concept` and the melon-mode principles. Keep only skills that are truly specific to the repo. Carry any **lessons or "traps seen"** list from the old process into `melon-correct` as its first input; don't lose them.
 8. **CI:** apply `${CLAUDE_PLUGIN_ROOT}/examples/ci-path-filters.md`:
    - skip `tier:s` PRs;
    - lint-only for docs;

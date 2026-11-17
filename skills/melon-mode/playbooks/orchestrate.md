@@ -19,12 +19,7 @@
 
 ## 2. Make sure the issue has a brief
 - An outline issue (no brief yet) goes through the `melon-concept` skill in autonomous mode first. **Expand it from the code on `main`, never from memory,** and design related issues together.
-- A complete brief (`templates/brief.md`) has:
-  - the goal and a done check that can pass or fail;
-  - owned paths, the stop point and the hotspots;
-  - **spec excerpts with `file:line` references**;
-  - the UX effect and the acceptance criteria.
-- Have an Explore subagent pull the excerpts; don't read whole docs yourself.
+- A complete brief fills `templates/brief.md`, including design excerpts with **`file:line` references**. Have an Explore subagent pull the excerpts; don't read whole docs yourself.
 - Label `tier:*`, `area:*` and `status:ready`.
 
 ## 3. Launch

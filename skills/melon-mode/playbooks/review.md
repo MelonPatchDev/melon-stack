@@ -3,11 +3,11 @@
 **You commit to what "done" means before the code exists, then judge the code against it.** You never wrote the change. You block only on problems you can show.
 
 ## Phase 1: the test plan (before code)
-1. Read the issue, its brief and comments, and the code it will touch. Pull the spec excerpts it cites, and anything else only where needed.
-2. **H tier: check the design.** Verify each claim the brief makes about the code (`file:line`): that the module exists, that a caller works the way the brief says, that the hotspots listed are the right ones. Invent edge cases from each persona. A wrong claim goes at the top of your plan as a blocking question.
+1. Read the issue, its brief and comments, and the code it will touch. Pull anything else only where needed.
+2. **H tier: check the design.** Verify each claim the brief makes about the code (`file:line`). A wrong claim goes at the top of your plan as a blocking question.
 3. Post a comment on the **issue** that starts with `TEST PLAN` (template: `templates/test-plan.md`). It's your reading of the task: ≤25 lines, one line per case:
-   `T<n> · <observable behaviour> · <unit | property | golden | UI> · <why: acceptance criterion / spec § / ground rule>`
-   - Cover each acceptance criterion, the edge cases each persona would hit, and the failure modes (empty, unknown, missing data, unauthorised).
+   `T<n> · <observable behaviour> · <unit | property | golden | UI> · <why: acceptance criterion / rules § / ground rule>`
+   - Cover each acceptance criterion, and the edge cases where the behaviour needs a decision.
    - **Formula code:** compute golden values by hand for 2–4 small cases and put them in the plan.
    - Name anything you think the issue leaves unclear. The builder answers it in its reply.
 4. **End your turn** with one line: `TEST PLAN POSTED #<n>`. Don't wait inside the turn or poll for the builder's reply; the orchestrator wakes you. If the builder replies `PLAN DIFFERS`, the orchestrator brings you its points: answer each in one comment, then end your turn again. Anything still open is the orchestrator's call.

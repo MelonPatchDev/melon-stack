@@ -6,7 +6,7 @@ melon-stack adapts material from the projects below. Both are MIT-licensed; thei
 
 Source: https://github.com/mattpocock/skills
 
-Adapted in (credited here rather than in the skill files, which agents read): `skills/grilling`, `skills/domain-modeling`, `skills/codebase-design` (including `DEEPENING.md` and `DESIGN-IT-TWICE.md`), and the design stage of `skills/melon-concept`.
+Adapted in (credited here rather than in the skill files, which agents read): `skills/grilling`; the design stage of `skills/melon-concept` (from grill-with-docs and domain-modeling); and the deep-module, seam and test-at-the-interface principles in `skills/melon-mode` (from codebase-design).
 
 ```
 MIT License

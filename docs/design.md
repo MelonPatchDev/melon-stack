@@ -16,6 +16,14 @@ Every rule here does at least one of three things:
 2. **Cut turns:** scripts instead of agents reasoning about process; no confirmation round trips where nothing is decided.
 3. **Move judgment into tests:** a check that runs for free beats a reviewer re-deriving it.
 
+## How opinionated to be
+Current models are good at the craft: designing modules, writing specs, finding edge cases. Instructions that teach craft cost every reader tokens on every call, anchor agents to a checklist instead of the problem in front of them, and go stale as models improve. Instructions that are missing leave parallel agents unable to coordinate. So melon-stack is **opinionated about what an agent can't know, and silent about what it already does well.** An instruction earns its place only if it:
+1. **coordinates agents:** markers, formats, hand-offs, stop points (stated exactly);
+2. **encodes a real failure** from this process (preferably as a check, not prose);
+3. **states a preference that differs from the model's default:** every principle names the default it corrects (over-building, symptom guards, compatibility shims, repo docs about history, waiting inside a turn, asking).
+
+Anything a capable model would do unprompted is deleted. `melon-correct` applies the same test to every new rule, which is also why melon-stack ships no generic spec-writing, domain-modeling or module-design skills: their few real opinions live in `melon-concept` and the principles.
+
 ## The pipeline
 
 ```
@@ -192,5 +200,6 @@ Each check is named after the rule it enforces, so the rule's words find it. The
 | "block only on a problem you can show" (pstack) | benchmark checklist → the perf playbook | multi-model panels |
 | encode lessons as checks (pstack `/correct`) | decision log → open decisions only, graduating into tests | an hourly root loop probing agents |
 | pause safely / session pickup (pstack) | babysit → `melon status` + `melon gate` (scripts, not an agent) | formal verification |
-| grilling, domain modeling, deep modules (Matt Pocock) | design-it-twice → only on request or for H seams | a cloud VM per agent |
+| grilling, the human-in-the-loop design interview (Matt Pocock) | deep modules and seams (Matt Pocock) → three principles | a cloud VM per agent |
+| | the spec's level of detail → one rule in `melon-concept` | generic design-craft skills (spec writing, domain modeling, module design) |
 | the principles index (pstack) | | |

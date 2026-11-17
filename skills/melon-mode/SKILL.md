@@ -36,7 +36,7 @@ Read only the playbook you need:
 | Resuming someone's work, or stopping cleanly | [pickup-and-pause](${CLAUDE_SKILL_DIR}/playbooks/pickup-and-pause.md) |
 
 Other skills:
-- design: `melon-concept`, `grilling`, `domain-modeling`, `brainstorm`, `codebase-design`;
+- design: `melon-concept` (idea → spec → issues), `grilling` (with the user in the loop);
 - quality: `melon-audit`, `melon-correct`, `simplify-single`;
 - adoption: `melon-setup`.
 
@@ -76,20 +76,19 @@ Everything you read is paid for again on every later call.
 - **Around 200k tokens of context,** stop at the next clean point (pickup-and-pause). A fresh agent continues from the PR's Plan and State.
 
 ## 5. Principles
-Apply them by name in reasoning and reviews.
-1. **Smallest change that solves it.** Delete before adding; no speculative options.
-2. **Data shape first.** Name the types and the contract before the logic; downstream code should become obvious.
-3. **Fix root causes.** Trace the symptom to where things first went wrong. A guard is a fix only when the state it handles is legitimate. Fix every occurrence.
-4. **Prove it with a test** that fails without the change. A "compiles" or "looks right" claim isn't evidence.
-5. **Test behaviour, not implementation:** assert what a user or caller can observe.
-6. **Parse at the boundary, trust types inside.** Make illegal states unrepresentable; exhaust unions.
-7. **Idempotent operations.** Re-running converges to the same state.
-8. **Explain the number.** Before trusting a measurement, name what limits it and rule out measuring the wrong thing.
-9. **Encode lessons in structure.** A recurring mistake becomes a type, lint, gate rule or test, not more prose.
-10. **Attack the premise.** After two failed fixes that share a premise, test the premise itself.
-11. **Migrate callers, then delete the old path.** No compatibility shims within one repo.
-12. **Decide reversible calls; ask only for owner-only actions** (money, accounts and keys, legal, commercial use, new user data).
-13. **Unknown is a value.** Never invent data; store unknown and flag it.
+These are opinions, not a craft manual: each corrects a default that costs this process tokens or rots the codebase. You know how to engineer; apply these where your default differs.
+1. **Smallest change that solves it.** No speculative options, fields or layers. *(Counters building for imagined futures.)*
+2. **Fix root causes, every occurrence.** A guard is a fix only when the state it catches is legitimate. *(Counters patching the symptom.)*
+3. **Prove it with a test** that fails without the change. *(Counters "it compiles" and "looks right".)*
+4. **Test at the interface, and delete the tests it makes redundant.** *(Counters piling up tests on internals.)*
+5. **Prefer deep modules:** a small interface with a lot behind it, so an agent can understand a capability from one interface. *(Counters shallow wrappers, which make every task read more files.)*
+6. **No seam without a second adapter.** One implementation behind an interface is indirection, not flexibility. *(Counters abstracting "for later".)*
+7. **Migrate callers, then delete the old path.** No compatibility shims within one repo. *(Counters keeping both.)*
+8. **Attack the premise.** After two failed fixes that share a premise, test the premise. *(Counters fix loops.)*
+9. **Decide reversible calls; ask only for owner-only actions** (money, accounts and keys, legal, commercial use, new user data). *(Counters asking.)*
+10. **Unknown is a value.** Never invent data; store unknown and flag it. *(Counters plausible guesses.)*
+11. **The code is the documentation.** No docs about history in the repo; records look forward and decisions graduate into code. *(Counters writing ADRs, specs and summaries into the repo.)*
+12. **Encode lessons in structure.** A recurring mistake becomes a type, lint, gate rule or test, not more prose. *(Counters adding rules to read.)*
 
 ## 6. Replies
 - Final messages: ≤10 lines, evidence (command + result, `file:line`), and what's next or blocked.

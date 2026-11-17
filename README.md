@@ -61,9 +61,6 @@ The orchestrator sets the tier. The CLI only ever raises it, from the paths and 
 | [`melon-mode`](skills/melon-mode/SKILL.md) | the entry point for orchestrating, building, reviewing, picking up or pausing work. Holds the reasoning order and principles. |
 | [`melon-concept`](skills/melon-concept/SKILL.md) | an idea needs to become a spec and buildable issues, with you in the loop or autonomously |
 | [`grilling`](skills/grilling/SKILL.md) | you want a plan stress-tested, one question at a time |
-| [`domain-modeling`](skills/domain-modeling/SKILL.md) | terms are fuzzy or overloaded; settle them in the glossary |
-| [`brainstorm`](skills/brainstorm/SKILL.md) | you want a feature spec written at the right level of detail |
-| [`codebase-design`](skills/codebase-design/SKILL.md) | you're designing a module's interface or looking for where to deepen one |
 | [`melon-audit`](skills/melon-audit/SKILL.md) | a whole-repo audit, where a script picks the files and one model pass judges them |
 | [`melon-correct`](skills/melon-correct/SKILL.md) | agents keep making the same mistake; turn it into a lint, gate rule or test |
 | [`simplify-single`](skills/simplify-single/SKILL.md) | a cleanup pass over a diff with at most one agent |
@@ -115,7 +112,9 @@ Configure it with `melon.config.json` ([reference](docs/config.md), [example](ex
 
 ## Principles
 
-Thirteen one-line principles live in [`melon-mode`](skills/melon-mode/SKILL.md#5-principles), most adapted from pstack. For example: smallest change; data shape first; fix root causes; prove it with a test; explain the number; encode lessons in structure; unknown is a value.
+Twelve one-line principles live in [`melon-mode`](skills/melon-mode/SKILL.md#5-principles), adapted from pstack and Matt Pocock. Each names the model default it corrects: smallest change, fix root causes, prove it with a test, prefer deep modules, no seam without a second adapter, the code is the documentation, and so on.
+
+melon-stack is deliberately **opinionated about what an agent can't know** (how agents coordinate, what's failed before, where your preferences differ from the model's defaults) **and silent about craft a capable model already has.** There are no spec-writing or module-design tutorials here; see [docs/design.md](docs/design.md#how-opinionated-to-be).
 
 ## Why it's built this way
 
@@ -134,7 +133,7 @@ This runs unit tests for the rules, audits and ledger, plus integration tests th
 melon-stack draws inspiration from:
 
 - **[pstack](https://github.com/cursor/plugins/tree/main/pstack)** by [poteto](https://github.com/poteto) (Lauren Tan). The playbook-per-task router, the principles, "block only on a problem you can show", encoding lessons as checks (`/correct`), the benchmark checklist and the pause/pickup flow all come from pstack, adapted for a budget.
-- **[Matt Pocock's skills](https://github.com/mattpocock/skills)**. `grilling`, `domain-modeling` and `codebase-design` (deep modules, seams, design it twice) are adapted from his work, and the design stage in `melon-concept` builds on his grill-with-docs approach.
+- **[Matt Pocock's skills](https://github.com/mattpocock/skills)**. `grilling` is adapted from his work; `melon-concept`'s design stage builds on his grill-with-docs approach; and the deep-module and seam principles come from his `codebase-design`.
 
 Both are MIT-licensed; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
