@@ -19,7 +19,7 @@ Every rule here does at least one of three things:
 ## The pipeline
 
 ```
-idea ──melon-concept──▶ spec + sliced issues (briefs, tiers, dependencies, direction.md)
+idea ──melon-concept──▶ spec in a work item + sliced issues (briefs, tiers, dependencies, direction)
      ──orchestrator──▶ builder (+ reviewer for M/H) per issue, up to 3 in parallel
      ──test plan────▶ reviewer posts TEST PLAN, builder agrees, tests first
      ──build────────▶ self-grill, milestones, diff self-review, melon check
@@ -38,7 +38,7 @@ It grounds the design in the code on `main` (never memory), pins the domain lang
 1. ground rules;
 2. personas and what each would never want;
 3. the issue's stories and acceptance criteria;
-4. precedent (the decision log and the code);
+4. precedent (the code, its tests, and the open decision-log entries);
 5. tie-breakers.
 
 A call resting on none of them is a labelled **taste call**.
@@ -66,7 +66,7 @@ Every issue and PR carries exactly one tier label.
 | Role | Owns | Doesn't do |
 |---|---|---|
 | **Owner** | direction, owner-only actions (money, accounts and keys, legal, commercial use, new user data), reading the daily log | approving individual PRs |
-| **Orchestrator** | what starts next, briefs, tiers, hotspot and migration slots, settling disagreements, running `melon merge`, keeping `direction.md` current | quality review: it never re-reviews code |
+| **Orchestrator** | what starts next, briefs, tiers, hotspot and migration slots, settling disagreements, running `melon merge`, keeping the records current | quality review: it never re-reviews code |
 | **Builder** | one issue (or one batch of S issues) from brief to merge-ready | changing paths it doesn't own; merging |
 | **Reviewer** (M, H) | the test plan (and, for H, the design check), then the verdict | writing the feature |
 
@@ -109,16 +109,36 @@ Agents should understand the repo before changing it, but reading costs on every
 
 **Session cap:** at about 200k tokens of context, an agent's next task goes to a fresh agent, which resumes from the PR's Plan and State. The orchestrator caps itself the same way and hands off.
 
-## Orchestration that a fresh agent can pick up
+## Records: the code is the documentation
+The codebase changes constantly, so docs that record *how it got here* go stale as soon as they're written, and every agent that reads them pays for history it doesn't need. melon-stack keeps two kinds of written material apart:
 
-| Artifact | Holds | Kept current by |
+- **Reference docs, in the repo, describing what's true now:** `CLAUDE.md` (ground rules), `docs/agent-map.md`, the glossary, and a rules doc for anything whose rules aren't obvious from code (how numbers are computed, for example). They must match the code, and a PR that changes behaviour updates them in the same PR.
+- **Records, in the tracker, looking forward:** what's planned, open and in flight. Skills name records by **role**, and each repo's `melon.config.json` says where each one lives (`melon records` prints the table; GitHub issues by default):
+
+| Record | Holds | Edited by |
 |---|---|---|
-| `docs/direction.md` (~1 page) | the current milestone and its persona, the bets, why work is in this order, open questions, **what each upcoming piece will teach us and how it could change the plan** | the orchestrator, whenever priorities move; the owner edits freely |
-| GitHub labels | status, tier, area (`status:*`, `tier:*`, `area:*`, `parked`) | every agent; `melon status` builds the live view |
-| `docs/decisions.md` | settled decisions, numbered, each with its basis | the PR that makes the decision |
+| **work item** | one issue: brief, tier, `Depends on:`, the design discussion and spec | orchestrator, `melon-concept` |
+| **decision log** | **open** decisions for unfinished work, each with where it will graduate | orchestrator only |
+| **owner list** | Needs you / Review later / Coming up / Done | orchestrator only |
+| **direction** | what's next and why (the body); orchestrator hand-offs (comments) | orchestrator; the owner freely |
+| **daily log** | one line per merge, with the measured ledger | `melon merge` |
 
-- **Hand-off:** each orchestrator session ends with a ≤15-line comment on the `direction` issue.
-- **Cold-start check:** a new orchestrator first answers, from the artifacts alone, *what starts next, why, and what would change the plan*. If it can't, fixing `direction.md` comes first.
+**Decisions graduate.** While work is in flight, its decisions live in the decision log so the builder, the reviewer and the orchestrator agree. When the work merges, each decision moves into the codebase:
+1. a test that fails if the decision is reversed, a type, or a lint or gate rule (strongest);
+2. a ground rule or a line in a reference doc;
+3. or nowhere, if the code already makes it obvious.
+
+Then its entry leaves the log. The builder names each graduation in the PR (`D3 → foo.test.ts:42`), and the reviewer checks it's real. Reversal protection is mostly tests, which no reviewer can forget to check. The reasoning stays on the issue or PR that argued it, one `git blame` away.
+
+No ADRs, decision files, committed specs, roadmaps or enforcement tables in the repo.
+
+**The tracker is a seam.** The roles are fixed; their locations are config. The CLI supports `github-issues`, `github-issue` and `file` today. Any other `kind` (a Jira project, say) is valid config, but it fails with a clear message when a command needs it. The first repo that needs another tracker is when we'd extract a tracker interface. One adapter is a hypothetical seam; two make a real one.
+
+## Orchestration that a fresh agent can pick up
+- **The direction record** holds the "why": the current milestone and its persona, the bets, why work is in this order, open questions, and **what each upcoming piece will teach us and how it could change the plan**. Finished milestones leave it.
+- **`melon status`** builds the live view from the tracker: what's in flight, what's ready (every dependency closed), what each item unlocks, hotspots and slots.
+- **Hand-off:** each orchestrator session ends with a ≤15-line comment on the direction record.
+- **Cold-start check:** a new orchestrator first answers, from the records alone, *what starts next, why, and what would change the plan*. If it can't, fixing the direction record comes first.
 
 ## Measuring it
 `melon ledger <pr>` reads Claude Code's session transcripts, counts each API call once, attributes them to the PR's issues, and reports raw counts plus an input-equivalent total (cache reads 0.1×, cache writes 1.25× or 2×, at API list prices). Attribution works for subagents described as `builder #<n>` / `reviewer #<n>`, and for sessions on a branch named `<n>-…`. `melon merge` writes the measurement into the daily log.
@@ -143,7 +163,8 @@ Named audits, each a **script that flags suspect files** plus **one focused mode
 | `style-drift` | colour and size literals outside token files; orphaned tokens |
 | `react-composition` | oversized components, derive-only effects, wide props |
 | `privacy` | outbound hosts, undocumented env vars (plus a route-guard check) |
-| `docs-drift` | references to spec sections that don't exist |
+| `docs-drift` | references to rules-doc sections that don't exist |
+| `spot-check` | no script: one recently merged PR's riskiest file, read as it is on `main` |
 
 ## Lessons become checks
 When agents repeat a mistake, fix it at the highest level that works, in this order:
@@ -152,7 +173,7 @@ When agents repeat a mistake, fix it at the highest level that works, in this or
 3. a test;
 4. docs, last.
 
-`docs/enforcement.md` pairs each rule with what enforces it, and prose a check makes redundant gets deleted.
+Each check is named after the rule it enforces, so the rule's words find it. The checks are the record; prose a check makes redundant gets deleted.
 
 ## What we took, and what we skipped
 
@@ -161,7 +182,7 @@ When agents repeat a mistake, fix it at the highest level that works, in this or
 | playbooks by task type (pstack) | verification → tests only, no screenshot or video | verifier swarms per PR |
 | a done check in every brief (pstack) | different-model review → H only, one pass | arena / competing prototypes by default |
 | "block only on a problem you can show" (pstack) | benchmark checklist → the perf playbook | multi-model panels |
-| encode lessons as checks (pstack `/correct`) | decision log → PR Decisions + `decisions.md` | an hourly root loop probing agents |
+| encode lessons as checks (pstack `/correct`) | decision log → open decisions only, graduating into tests | an hourly root loop probing agents |
 | pause safely / session pickup (pstack) | babysit → `melon status` + `melon gate` (scripts, not an agent) | formal verification |
 | grilling, domain modeling, deep modules (Matt Pocock) | design-it-twice → only on request or for H seams | a cloud VM per agent |
 | the principles index (pstack) | | |

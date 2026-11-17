@@ -40,14 +40,27 @@ Other skills:
 - quality: `melon-audit`, `melon-correct`, `simplify-single`;
 - adoption: `melon-setup`.
 
-**Templates** named in the playbooks (`templates/<name>.md`) are in `${CLAUDE_PLUGIN_ROOT}/templates/`: brief, test-plan, review-verdict, handoff, pr-body, direction, decisions, agent-map, enforcement.
+**Templates** named in the playbooks (`templates/<name>.md`) are in `${CLAUDE_PLUGIN_ROOT}/templates/`: brief, test-plan, review-verdict, pr-body, handoff, direction, decision-log, owner-list, agent-map.
+
+## Records, and why the code is the documentation
+The process runs on **records**, named by role. `melon records` (or the agent map) says where each one lives in this repo; by default they're GitHub issues. Records look **forward** only:
+
+| Record | Holds | Edited by |
+|---|---|---|
+| **work item** | one issue: brief, tier, dependencies, its design discussion | orchestrator, `melon-concept` |
+| **decision log** | open decisions for unfinished work | orchestrator only |
+| **owner list** | Needs you / Review later / Coming up / Done | orchestrator only |
+| **direction** | what's next and why; hand-offs as comments | orchestrator; the owner freely |
+| **daily log** | one line per merge, with the ledger | `melon merge` |
+
+Once work merges, **the code and its tests are the record of what was built.** Each decision it implemented *graduates* into the codebase (a test, a type, a lint or gate rule, a ground rule, or a line in a reference doc) and leaves the decision log. The reasoning stays on the issue or PR where it was argued. Never commit decision logs, ADRs, feature specs or roadmaps to the repo. The only docs in the repo describe what's true now: `CLAUDE.md`, the agent map, the glossary, the rules doc.
 
 ## 3. Reasoning order (what "correct" means)
 Every judgment call, by any role, rests on the first of these that settles it:
 1. the ground rules (`CLAUDE.md`);
 2. the personas and what each would never want (the repo's features doc);
 3. the issue's user stories, UX effect and acceptance criteria;
-4. precedent: the decision log and the existing code;
+4. precedent: the code, its tests, and the open decision-log entries;
 5. the repo's tie-breakers.
 
 A call that rests on none of them is a **taste call**: make it, and list it in the PR's Decisions as "taste call".

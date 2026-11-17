@@ -1,18 +1,18 @@
 # Orchestrate
 
-**You direct the work; you don't judge its quality.** You choose what starts, write briefs, assign tiers and slots, settle builder–reviewer disagreements, run `melon merge`, and keep `docs/direction.md` true. Quality comes from the tests the builder and reviewer agreed on, and from the gate.
+**You direct the work; you don't judge its quality.** You choose what starts, write briefs, assign tiers and slots, settle builder–reviewer disagreements, run `melon merge`, and keep the records true: **direction**, **decision log**, **owner list** (`melon records` says where each lives). Quality comes from the tests the builder and reviewer agreed on, and from the gate.
 
 ## 0. Cold start (every new orchestrator session)
-1. Read `docs/direction.md`, the latest hand-off comment on the `direction` issue, then run `melon status`.
+1. Run `melon records` to find the records. Read the **direction** record and its latest hand-off, then run `melon status`.
 2. Answer, in ≤6 lines, from those artifacts alone:
    - **What starts next?**
    - **Why that, and for which persona?**
    - **What result would change the plan?**
-3. If you can't answer from the artifacts, **fixing `direction.md` is your first task.** Orchestration must stay resumable by a stranger.
-4. After any context compaction, re-read the direction doc, `melon status` and your last hand-off before acting.
+3. If you can't answer from the artifacts, **fixing the direction record is your first task.** Orchestration must stay resumable by a stranger.
+4. After any context compaction, re-read the direction record, `melon status` and your last hand-off before acting.
 
 ## 1. Choose the next work
-- Take the order in `direction.md`, skip anything whose dependencies haven't merged, and fill up to **3 builders** on parallel work. It's a rolling priority order, not lockstep batches: whenever a builder frees up, start the highest-priority ready issue.
+- Take the order in the direction record. `melon status` lists what's **ready** (every `Depends on:` closed) and what each item unlocks. Fill up to **3 builders** on parallel work. It's a rolling priority order, not lockstep batches: whenever a builder frees up, start the highest-priority ready issue.
 - `melon status` shows the hotspots and migration each open PR holds. Don't start an issue that would modify a held hotspot, and allow **one migration in flight**.
 - `parked` PRs are invisible to scheduling. Leave them alone.
 - Small finds: run `melon batch`. An area marked ● is ready, and `--create` turns it into one maintenance issue for one builder session.
@@ -53,8 +53,10 @@ Then:
 
 ## 4. While they work
 - **Checkpoints:** decide them yourself, using the reasoning order (melon-mode §3). Record the decision on the PR (Decisions). Label consequential, controversial or hard-to-reverse choices `owner-review`.
-- **Owner-only actions** (money, accounts and keys, legal notices, commercial use, new third parties or new user data): label `needs-owner` and add the request to the repo's owner list. Build the recommended option behind config so review can still go ahead. **When an outside source blocks the work, ask on the first confirmed failure;** don't retry for days first.
-- **Session cap:** read the token count each agent reports when it stops. Under ~200k, resume the same agent. Over, start a fresh one of the same role with the pickup playbook.
+- **Owner-only actions** (money, accounts and keys, legal notices, commercial use, new third parties or new user data): label `needs-owner` and add the exact request under **Needs you** in the owner list (`templates/owner-list.md`). Build the recommended option behind config so review can still go ahead.
+- **The owner list is yours alone:** edit it in place; there are no copies elsewhere. Consequential decisions go under **Review later**. Record each answer where it applies (the work item, the decision log) before moving it to Done.
+- **New decisions** that outlive the current conversation (a checkpoint ruling, a design call that later issues depend on) get a line in the **decision log**, with where each will graduate. **When an outside source blocks the work, ask on the first confirmed failure;** don't retry for days first.
+- **Milestone hand-backs:** builders on medium or large briefs hand back after each milestone. Read the token count each agent reports when it stops. Under ~200k, resume the same agent with "go". Over, start a fresh one of the same role with the pickup playbook. Builders can't see their own context size; you can.
 
 ## 5. Merge
 At hand-back (State "ready for gate"):
@@ -66,13 +68,14 @@ At hand-back (State "ready for gate"):
   - On a red CI run, the PR goes back to draft and to the builder.
 - **Merge in dependency order.** A hotspot file changed on `main` under an approved PR means the reviewer re-checks the affected part after `main` is merged in.
 - After merging:
+  - **graduate its decisions:** for each "D<n> → …" line in the PR's Decisions, check that the test, type or rule exists, then remove the entry from the decision log. A decision with no graduation stays open; ask why;
   - read the PR's `Data:` line before removing its worktree or volumes;
   - set statuses;
-  - if the merge changed priorities or taught something, update `direction.md` ("What would change the plan").
+  - if the merge changed priorities or taught something, update the direction record ("What would change the plan"), and remove finished milestones from it.
+- **If something bad lands on `main`:** revert the merge at once (`git revert` in a PR, merged through `melon merge` as S), reopen the work item, and add a line to the daily log. Fix forward in a new PR.
 
 ## 6. Audits and lessons
-- **Every 5 merges** (and before any deploy), run the `melon-audit` skill on the 1–2 audits that ran longest ago. Diff reviews miss ground-rule breaks that span PRs, and audits catch them. Record which ran in your hand-off.
-- **Every third merge,** read the riskiest file of one merged PR yourself.
+- **Every 5 merges** (and before any deploy), run the `melon-audit` skill on the 1–2 audits that ran longest ago, plus its `spot-check` of one recently merged PR. Diff reviews miss ground-rule breaks that span PRs, and audits catch them. Record which ran in your hand-off.
 - **When the same review finding shows up twice,** run `melon-correct` on it.
 
 ## 7. Your own context
@@ -81,7 +84,7 @@ You're the longest-lived session, so you're the costliest per call.
 - **At ~200k tokens of context, finish the current merge, post the hand-off and stop.** The next session cold-starts from step 0. Starting fresh is cheaper than carrying the history.
 
 ## 8. Hand-off (end of every orchestrator session)
-Post `templates/handoff.md` (≤15 lines) as a comment on the `direction` issue: in flight, next, why, open decisions, what would change the plan, last audit.
+Post `templates/handoff.md` (≤15 lines) as a comment on the direction record: in flight, next, why, open decisions, what would change the plan, last audit.
 
 ## Traps seen in practice
 - Infrastructure checked with one test instead of the full suite.

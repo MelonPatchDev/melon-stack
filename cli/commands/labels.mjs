@@ -1,4 +1,5 @@
 // melon labels: the label set the process runs on.
+import { resolveRecords } from '../lib/records.mjs';
 import { gh, ghJson } from '../lib/sh.mjs';
 
 export const help = `melon labels [--apply]
@@ -20,8 +21,9 @@ export function labelSet(config) {
     ['bug', 'd73a4a', 'Something is wrong'],
     ['batched', 'ededed', 'Folded into a maintenance issue'],
     ['maintenance', 'c2e0c6', 'A batch of small fixes'],
-    ['daily-log', 'ffffff', 'One issue per day; one comment per merge'],
-    ['direction', '0052cc', 'Orchestrator hand-offs and direction discussion'],
+    ...Object.entries(resolveRecords(config))
+      .filter(([, r]) => r.kind === 'github-issue' && r.label)
+      .map(([name, r]) => [r.label, '0052cc', `Record: ${name}`]),
     ...config.areas.map((a) => [`area:${a}`, 'bfd4f2', `Area: ${a}`]),
   ];
 }

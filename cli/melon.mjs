@@ -2,7 +2,7 @@
 // melon: the scripted half of melon-stack. Node 22, no dependencies; shells out to git and gh.
 import { loadConfig } from './lib/config.mjs';
 
-const COMMANDS = ['check', 'gate', 'focus', 'merge', 'ledger', 'status', 'batch', 'labels', 'audit', 'init'];
+const COMMANDS = ['check', 'gate', 'focus', 'merge', 'ledger', 'records', 'status', 'batch', 'labels', 'audit', 'init'];
 const NO_CONFIG = new Set(['init']);
 
 export function parseArgs(argv) {

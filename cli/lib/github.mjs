@@ -44,12 +44,12 @@ export function listOpenPrs() {
     '--limit',
     '100',
     '--json',
-    'number,title,labels,isDraft,headRefName,updatedAt,url',
+    'number,title,labels,isDraft,headRefName,headRefOid,updatedAt,url',
   ]).map((p) => ({ ...p, labels: labelNames(p.labels) }));
 }
 
-export function listOpenIssues(label) {
-  const args = ['issue', 'list', '--state', 'open', '--limit', '300', '--json', 'number,title,labels,updatedAt'];
+export function listOpenIssues(label, { body = false } = {}) {
+  const args = ['issue', 'list', '--state', 'open', '--limit', '300', '--json', `number,title,labels,updatedAt${body ? ',body' : ''}`];
   if (label) args.push('--label', label);
   return ghJson(args).map((i) => ({ ...i, labels: labelNames(i.labels) }));
 }

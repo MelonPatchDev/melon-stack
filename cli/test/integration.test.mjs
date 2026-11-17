@@ -53,7 +53,16 @@ function setup() {
   writeFileSync(join(work, 'src', 'a.js'), 'x\ny\n');
   g('commit', '-qam', 'fix a');
   g('push', '-q', 'origin', 'HEAD:refs/pull/7/head');
+  g('push', '-q', 'origin', 'HEAD:refs/pull/9/head');
   const sha7 = g('rev-parse', 'HEAD');
+
+  // PR 10: edits the same line as PR 7 (a textual conflict between two open PRs).
+  g('checkout', '-q', 'main');
+  g('checkout', '-qb', '10-other');
+  writeFileSync(join(work, 'src', 'a.js'), 'x\nz\n');
+  g('commit', '-qam', 'other a');
+  g('push', '-q', 'origin', 'HEAD:refs/pull/10/head');
+  const sha10 = g('rev-parse', 'HEAD');
 
   // PR 8 (M): reviewed at A, then main moves and is merged in (a merge commit only).
   g('checkout', '-q', 'main');
@@ -93,7 +102,7 @@ function setup() {
     url: '',
     ...extra,
   });
-  const issue = (number, labels = [], comments = []) => ({ number, title: `Issue ${number}`, labels, state: 'OPEN', comments, updatedAt: new Date().toISOString() });
+  const issue = (number, labels = [], comments = [], body = '') => ({ number, title: `Issue ${number}`, body, labels, state: 'OPEN', comments, updatedAt: new Date().toISOString() });
   writeFileSync(
     env.FAKE_GH_STATE,
     JSON.stringify({
@@ -107,6 +116,7 @@ function setup() {
           comments: [{ body: `REVIEW VERDICT: APPROVE @ ${shaA}\n- T1 ✓\n[reviewer #108]`, createdAt: '2026-01-01' }],
         }),
         9: pr(9, { labels: [], headRefName: '9-x', headRefOid: sha7 }),
+        10: pr(10, { labels: ['tier:s', 'parked'], headRefName: '10-other', headRefOid: sha10 }),
       },
       files: {
         7: [{ filename: 'src/a.js', status: 'modified', additions: 1, deletions: 0, patch: '@@ -1 +1,2 @@\n x\n+y' }],
@@ -114,12 +124,15 @@ function setup() {
         9: [{ filename: 'src/b.js', status: 'modified', additions: 1, deletions: 0, patch: '@@ -1 +1,2 @@\n x\n+// TODO later' }],
       },
       issues: {
-        107: issue(107),
+        107: issue(107, ['tier:s', 'status:ready'], [], 'Depends on: #109'),
         108: issue(108, [], [
           { body: 'TEST PLAN for #108\n- T1 · it works · unit · AC1', createdAt: '1' },
           { body: 'PLAN AGREED (settled by orchestrator)\n[orchestrator]', createdAt: '2' },
         ]),
-        109: issue(109),
+        109: issue(109, ['tier:m', 'status:ready']),
+        300: issue(300, ['decisions']),
+        301: issue(301, ['owner-attention']),
+        302: issue(302, ['direction']),
         20: issue(20, ['found-by-agent', 'area:web']),
         21: issue(21, ['bug', 'area:web', 'tier:s']),
         22: issue(22, ['found-by-agent', 'area:web']),
@@ -145,7 +158,7 @@ function setup() {
     fn(s);
     writeFileSync(env.FAKE_GH_STATE, JSON.stringify(s));
   };
-  return { run, calls, state, setState, work, sha7, shaA, shaM, g };
+  return { run, calls, state, setState, work, sha7, sha10, shaA, shaM, g };
 }
 
 test('S tier: gate needs recorded checks; merge squashes, logs and dispatches batch CI', () => {
@@ -306,4 +319,63 @@ test('init vendors the CLI without tests and keeps it out of the repo tooling, i
   execFileSync('git', ['init', '-q', plain]);
   assert.equal(spawnSync(process.execPath, [CLI, 'init', plain], { encoding: 'utf8' }).status, 0);
   assert.ok(!existsSync(join(plain, '.prettierignore')), 'no Prettier, no .prettierignore');
+});
+
+test('status: ready vs waiting on dependencies, unlocks, record issues left out', () => {
+  const t = setup();
+  t.setState((s) => {
+    s.prs[7].state = 'CLOSED'; // otherwise #107 and #109 count as already in a PR
+    s.prs[9].state = 'CLOSED';
+  });
+  const r = t.run('status', '--no-slots');
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /## Ready to start \(dependencies closed\) \(1\)\n- #109 Issue 109 \[tier:m\] · unlocks #107/);
+  assert.match(r.out, /## Waiting on dependencies \(1\)\n- #107 Issue 107 \[tier:s\] · waits on #109/);
+  assert.doesNotMatch(r.out, /#30[012] /, 'record issues are not work');
+});
+
+test('records --check finds each record, and a missing one fails', () => {
+  const t = setup();
+  let r = t.run('records', '--check');
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /\| decisionLog \| GitHub issue labelled `decisions` ✓ #300 \|/);
+  assert.match(r.out, /\| dailyLog \| GitHub issue labelled `daily-log` \(one per day\) · created on the first merge \|/);
+  t.setState((s) => {
+    s.issues[302].state = 'CLOSED';
+  });
+  r = t.run('records', '--check');
+  assert.equal(r.code, 1);
+  assert.match(r.out, /\| direction \| GitHub issue labelled `direction` ✗ missing \|/);
+});
+
+test('gate warns about a conflict with another open PR; parked PRs are skipped', () => {
+  const t = setup();
+  t.setState((s) => {
+    s.prs[10].labels = ['tier:s'];
+  });
+  let r = t.run('gate', '7');
+  assert.match(r.out, /! no conflict with other open PRs — conflicts with #10 \(src\/a\.js\)/);
+  t.setState((s) => {
+    s.prs[10].labels = ['tier:s', 'parked'];
+  });
+  r = t.run('gate', '7');
+  assert.doesNotMatch(r.out, /conflicts with #10/);
+});
+
+test('merge writes the daily log where records.dailyLog says', () => {
+  const t = setup();
+  const cfgPath = join(t.work, 'melon.config.json');
+  const cfg = JSON.parse(readFileSync(cfgPath, 'utf8'));
+  cfg.records = { dailyLog: { label: 'merge-log', titlePrefix: 'Merges ' } };
+  writeFileSync(cfgPath, JSON.stringify(cfg));
+  t.g('commit', '-qam', 'config');
+  t.g('push', '-q', '-f', 'origin', 'HEAD:refs/pull/7/head');
+  t.setState((s) => {
+    s.prs[7].headRefOid = t.g('rev-parse', 'HEAD');
+  });
+  assert.equal(t.run('check', '--record', '7').code, 0);
+  const r = t.run('merge', '7', '--ledger', 'x');
+  assert.equal(r.code, 0, r.out);
+  const log = Object.values(t.state().issues).find((i) => i.labels.includes('merge-log'));
+  assert.match(log.title, /^Merges \d{4}-\d{2}-\d{2}$/);
 });

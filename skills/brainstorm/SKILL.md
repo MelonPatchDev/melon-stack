@@ -1,6 +1,6 @@
 ---
 name: brainstorm
-description: "Collaborative brainstorming and feature specification for software projects. Use this skill when the user wants to brainstorm a feature, plan a milestone, design a data model, flesh out project requirements, create a feature spec, or discuss what an app/system should do. Trigger on phrases like 'let's brainstorm', 'let's spec out', 'what should M2 look like', 'help me think through', 'let's plan the feature', 'I have an idea for', or any conversation where the user is describing what they want to build and needs help structuring it into a clear plan. Also use when the user wants to review or refine an existing spec doc."
+description: "Collaborative brainstorming and feature specification for software projects. Use this skill when the user wants to brainstorm a feature, plan a milestone, design a data model, flesh out project requirements, create a feature spec, or discuss what an app/system should do. Trigger on phrases like 'let's brainstorm', 'let's spec out', 'what should M2 look like', 'help me think through', 'let's plan the feature', 'I have an idea for', or any conversation where the user is describing what they want to build and needs help structuring it into a clear plan. Also use when the user wants to review or refine an existing spec."
 ---
 
 # Brainstorm
@@ -13,7 +13,7 @@ A good spec emerges through conversation, not from filling in a template. The pr
 
 **1. Listen and expand** — Start with the user's idea as-is. Ask clarifying questions. Then *widen* the scope: suggest adjacent concerns, edge cases, and design considerations the user may not have thought of. Frame suggestions as "I'd suggest X because Y" — have opinions, but the user has final say.
 
-**2. Structure incrementally** — As the conversation develops shared understanding, start organizing ideas into a doc. Don't front-load structure — let it emerge from the discussion. Create the spec file in `docs/` with a descriptive name (e.g., `docs/m1-feature-spec.md`, `docs/auth-brainstorm.md`).
+**2. Structure incrementally** — As the conversation develops shared understanding, start organizing ideas into a doc. Don't front-load structure — let it emerge from the discussion. Write it into the **work item** (the parent issue for the feature or milestone; `melon records` says where work items live), not into the repo. A spec looks forward: once the work is built, the code and its tests are the spec, and a committed spec file would only drift.
 
 **3. Review what you wrote** — After drafting each major section, do a two-pass review:
    - **Gaps**: missing edge cases, unhandled states, implicit assumptions that need to be explicit. Ask yourself "what happens when [unusual scenario]?" and "does this break for [different user type]?"

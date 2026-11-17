@@ -7,7 +7,7 @@ const rank = (t) => TIERS.indexOf(t);
 /**
  * The lowest tier a change allows, with the reasons. H is for changes that would break something
  * systemic: a file on the `h` list, or an *edit* (any deleted or changed line) to an `hEdits`
- * file such as a numbered spec doc. M is for an `m` floor path, a held hotspot, or more code churn than
+ * file such as a numbered rules doc. M is for an `m` floor path, a held hotspot, or more code churn than
  * `sMaxChurn` (paths in `churnIgnore` such as docs and fixtures don't count). Anything else is S.
  * `files`: [{ path, additions, deletions }].
  */

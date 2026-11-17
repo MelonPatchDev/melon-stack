@@ -118,19 +118,19 @@ export function privacy(files, cfg, envExampleText = '') {
   return out;
 }
 
-export function docsDrift(files, cfg, specText = '') {
+export function docsDrift(files, cfg, rulesText = '') {
   const out = [];
-  if (!specText || !cfg.specDoc) return out;
-  const sections = new Set([...specText.matchAll(/^#{2,3}\s+(\d+)\./gm)].map((m) => m[1]));
+  if (!rulesText || !cfg.rulesDoc) return out;
+  const sections = new Set([...rulesText.matchAll(/^#{2,3}\s+(\d+)\./gm)].map((m) => m[1]));
   // In prose, § also cites statutes ("5 U.S.C. §552"); count it only on a line naming the doc.
-  const docName = new RegExp(cfg.specDoc.split('/').pop().replace(/\.[^.]+$/, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+  const docName = new RegExp(cfg.rulesDoc.split('/').pop().replace(/\.[^.]+$/, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
   for (const { path, text } of files) {
-    if (path === cfg.specDoc) continue;
+    if (path === cfg.rulesDoc) continue;
     const lines = text.split('\n');
     lines.forEach((l, i) => {
       if (path.endsWith('.md') && !docName.test(l)) return;
       for (const m of l.matchAll(/§\s?(\d{1,2})(?!\d)/g)) {
-        if (!sections.has(m[1])) out.push({ path, line: i + 1, note: `refers to §${m[1]}, which ${cfg.specDoc} doesn't have` });
+        if (!sections.has(m[1])) out.push({ path, line: i + 1, note: `refers to §${m[1]}, which ${cfg.rulesDoc} doesn't have` });
       }
     });
   }
@@ -142,5 +142,5 @@ export const AUDITS = {
   'style-drift': { scan: (ctx) => styleDrift(ctx.files, ctx.cfg, ctx.files), focus: 'Does each literal bypass the theme (it should come from a token), and is each unused token truly orphaned?' },
   'react-composition': { scan: (ctx) => reactComposition(ctx.files, ctx.cfg), focus: 'Where would splitting, composition (children/slots) or derived state make the component simpler? Only flag changes worth their diff.' },
   privacy: { scan: (ctx) => privacy(ctx.files, ctx.cfg, ctx.envExample), focus: 'Does any flagged host receive user data or get fetched faster than the polite-fetching rule allows? Is every read env var documented? Also check that every API route is behind the auth guard.' },
-  'docs-drift': { scan: (ctx) => docsDrift(ctx.files, ctx.cfg, ctx.spec), focus: 'For each stale reference, which section is meant, and does the code still match that section?' },
+  'docs-drift': { scan: (ctx) => docsDrift(ctx.files, ctx.cfg, ctx.rules), focus: 'For each stale reference, which section is meant, and does the code still match that section?' },
 };

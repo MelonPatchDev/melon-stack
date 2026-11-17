@@ -3,8 +3,8 @@
 **H is for changes whose break would be systemic and hard to undo:** formula code behind the numbers users act on, the stored format, auth. Reading these for errors is expensive, so this playbook turns them into tests, and the reviewer reads only the focus files in depth.
 
 ## Formula code (any number users see or act on)
-1. **The spec comes first.** If the repo keeps a numbered spec doc (`audits.specDoc`), a rule change edits it in this PR, with the before and after quoted under Decisions. Rule changes (as opposed to clarifications) are labelled `owner-review`.
-2. **Golden tests.** In its TEST PLAN, the reviewer **computes the expected values by hand, independently**, for 2–4 small cases (the simplest case, a partial case, a zero-length or empty case, a missing input). The builder encodes them as fixtures. When the code and a hand-computed value disagree, the spec settles it. Never change the expected number to match the code.
+1. **The rules come first.** If the repo keeps a numbered rules doc (`audits.rulesDoc`: a reference doc describing how numbers are computed now), a rule change edits it in this PR, with the before and after quoted under Decisions. Rule changes (as opposed to clarifications) are labelled `owner-review`.
+2. **Golden tests.** In its TEST PLAN, the reviewer **computes the expected values by hand, independently**, for 2–4 small cases (the simplest case, a partial case, a zero-length or empty case, a missing input). The builder encodes them as fixtures. When the code and a hand-computed value disagree, the rules doc settles it. Never change the expected number to match the code.
 3. **Property-based tests** (fast-check or the language's equivalent) for the invariants, for example:
    - scaling every input leaves ratios unchanged;
    - no input means "no value", never 0;

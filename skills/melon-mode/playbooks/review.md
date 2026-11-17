@@ -22,8 +22,9 @@
    - the ground rules;
    - auth guards on new routes;
    - glossary terms;
-   - the spec doc updated together with any rule or formula change;
-   - the Decisions with their bases;
+   - the rules doc updated together with any rule or formula change;
+   - the Decisions with their bases, and **each graduation real**: `D<n> → <where>` points at a test, type or rule that would fail or object if the decision were reversed;
+   - **no silent reversal:** the change contradicts no open decision-log entry, ground rule or rules-doc line without listing it under Decisions (with `owner-review`). A PR that edits or deletes an existing test's assertion is reversing whatever that test protects; it must say so;
    - Impact claims true against the code. An overstated or missing UX effect is blocking.
    - **Fragment check:** could this have been part of another open or planned PR? One issue should be one complete slice.
 4. **UI changes: walk it as each persona.** Take each user story, as each persona, through the screens as the code defines them. Report where they'd stall, misread a figure, or find a step heavy.

@@ -31,8 +31,9 @@
    - One commit per plan step, with docs alongside the code.
    - **Between milestones, run only the tests you're working on** (one test file, plus a typecheck if you're unsure the code compiles). Not the full suite; that runs once, at hand-back.
    - Evidence is unit, property-based and golden tests, plus UI assertions for flows. No screenshots or videos.
-   - On M-sized or larger work, push and update State at each milestone, so a fresh builder can continue if you hit the session cap.
+   - **Medium or large briefs: hand back after each milestone.** Push, update State and `Data:`, and end your turn with ≤5 lines: the milestone done, what's next. The orchestrator can see your context size and you can't; it resumes you or hands the next milestone to a fresh builder.
 7. **Read your own diff against the issue** before any full check: every acceptance criterion, the brief's stop point, the Decisions, and no stray debug code or `TODO` without an issue number. This is the cheapest review there is.
+   - **Graduate each decision** this work implements (the brief's "Decisions this settles", and any decision-log entry you acted on). Make sure each now lives in the codebase: a test that fails if it's reversed, a type, a lint or gate rule, a ground rule, or a line in a reference doc. Add `D<n> → <where>` to the PR's Decisions. Don't write decision logs, ADRs or specs into the repo.
 8. **Hand back.**
    - Merge the latest `main` in (never rebase a pushed branch, never force-push).
    - Run `melon check --full`. For S, use `melon check --record <pr>` on the committed head instead. Fix what fails and run it once more; if it still fails, stop and say what fails and why in State.

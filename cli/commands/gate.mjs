@@ -92,8 +92,8 @@ export function evaluate(number, config, { fix = false } = {}) {
 
   // Hotspots and the migration slot against other open PRs.
   const migrates = addsMigration(files, config.migrations);
+  const others = listOpenPrs().filter((p) => p.number !== pr.number && !p.labels.includes('parked'));
   if (held.length || migrates) {
-    const others = listOpenPrs().filter((p) => p.number !== pr.number && !p.labels.includes('parked'));
     const clashes = [];
     const otherMigrations = [];
     for (const o of others) {
@@ -121,6 +121,21 @@ export function evaluate(number, config, { fix = false } = {}) {
     add(mt.status === 0, 'merges cleanly with main', mt.status === 0 ? '' : conflictFiles.slice(0, 5).join(', ') || mt.stderr);
     const upToDate = tryRun('git', ['merge-base', '--is-ancestor', `origin/${main}`, head], { cwd }).status === 0;
     if (!upToDate) warn('contains latest main', 'main has moved; merge it in before CI (M/H) or merge');
+
+    // Textual conflicts with other open PRs: not a failure (two additive changes to one index
+    // file conflict harmlessly), but the orchestrator sequences them and resolves at merge.
+    if (others.length) {
+      const refspecs = others.map((o) => `+refs/pull/${o.number}/head:refs/melon/pr-${o.number}`);
+      tryRun('git', ['fetch', '-q', 'origin', ...refspecs], { cwd });
+      const conflicts = [];
+      for (const o of others) {
+        const ref = `refs/melon/pr-${o.number}`;
+        if (tryRun('git', ['rev-parse', '-q', '--verify', ref], { cwd }).status !== 0) continue;
+        const r = tryRun('git', ['merge-tree', '--write-tree', '--name-only', '--no-messages', head, ref], { cwd });
+        if (r.status === 1) conflicts.push(`#${o.number} (${r.stdout.split('\n').slice(1).filter(Boolean).slice(0, 3).join(', ')})`);
+      }
+      if (conflicts.length) warn('no conflict with other open PRs', `conflicts with ${conflicts.join('; ')}: merge in dependency order and resolve at the second merge`);
+    }
   }
 
   // Evidence for the tier.

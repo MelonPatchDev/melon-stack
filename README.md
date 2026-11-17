@@ -10,6 +10,7 @@ The answer it settles on:
 - **Turn judgment into tests.** The reviewer writes the test plan *before* the code exists, and the builder writes those tests first. Review then checks a plan instead of re-deriving the code.
 - **Script the mechanics.** Labels, hotspots, migration slots, CI and the daily log are handled by a small CLI, not by agents reasoning about process.
 - **Measure what it costs.** A ledger reads Claude Code's own session transcripts, so you know what each PR really cost, not what agents estimate.
+- **The code is the documentation.** Plans, specs and decisions live in your tracker and look forward only. When work merges, each decision graduates into a test, type or rule, and leaves the log. The repo holds only docs that describe what's true now.
 
 It's a Claude Code plugin: skills, playbooks, two agent definitions, templates, and `melon`, a zero-dependency Node CLI.
 
@@ -24,7 +25,7 @@ Claude Code prefixes plugin skills, so `melon-mode` is `/melon-stack:melon-mode`
 
 ## Get started
 
-1. **Adopt it in a repo:** run `/melon-stack:melon-setup` in the repo. It vendors the CLI into `tools/melon/`, writes `melon.config.json`, creates the labels, and drafts four short docs agents rely on: `agent-map.md`, `direction.md`, `decisions.md` and `enforcement.md`.
+1. **Adopt it in a repo:** run `/melon-stack:melon-setup` in the repo. It vendors the CLI into `tools/melon/`, writes `melon.config.json`, sets up the records (direction, decision log, owner list) and labels, and writes one short doc agents rely on: `docs/agent-map.md`.
 2. **Design something:** `/melon-stack:melon-concept let's design <idea>`. You get grilled one question at a time, then you get a spec and a set of issues, each with a brief, a tier and its dependencies.
 3. **Run it:** `/melon-stack:melon-mode orchestrate`. The orchestrator launches up to three builders (each M/H builder paired with a reviewer), gates each PR and merges it.
 
@@ -88,7 +89,7 @@ The orchestrator sets the tier. The CLI only ever raises it, from the paths and 
 
 </details>
 
-Agents: [`melon-builder`](agents/melon-builder.md) and [`melon-reviewer`](agents/melon-reviewer.md). Templates for briefs, test plans, verdicts, hand-offs and the agent docs are in [`templates/`](templates/).
+Agents: [`melon-builder`](agents/melon-builder.md) and [`melon-reviewer`](agents/melon-reviewer.md). Templates for briefs, test plans, verdicts, hand-offs, the records and the agent map are in [`templates/`](templates/).
 
 Companions we recommend but don't bundle: Anthropic's [`frontend-design`](https://github.com/anthropics/claude-plugins-official) plugin for UI work, and any data-visualization skill you trust for charts.
 
@@ -103,7 +104,8 @@ Companions we recommend but don't bundle: Anthropic's [`frontend-design`](https:
 | `melon focus <pr> [--diff]` | the files a reviewer must read in depth, and their diff alone |
 | `melon merge <pr>` | gate → CI per tier → squash → daily-log line with the measured ledger → batch CI on `main` |
 | `melon ledger <pr>` | what the PR really cost, by role, from the session transcripts |
-| `melon status` | the live board, built from labels |
+| `melon status` | the live board: in flight, ready (dependencies closed), what each item unlocks, hotspots |
+| `melon records [--check]` | where each record lives in this repo (decision log, owner list, direction, …) |
 | `melon batch [--create]` | groups small bugs by area into one maintenance issue |
 | `melon audit <name>` | flags files for an audit: `state-machines`, `style-drift`, `react-composition`, `privacy`, `docs-drift` |
 | `melon labels [--apply]` · `melon init` | create missing labels · vendor the CLI |

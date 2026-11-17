@@ -1,21 +1,25 @@
 # Agent map
 
-<!-- ≤3k tokens. Every agent reads this after CLAUDE.md. Point to things; don't copy them. -->
+<!-- ≤3k tokens. Every agent reads this after CLAUDE.md. It describes the codebase as it is now; point to things, don't copy them. -->
 
 ## Where things live
-| Path | What | Owner doc |
-|---|---|---|
-| `apps/…` | | |
+| Path | What |
+|---|---|
+| `apps/…` | |
 
-## Rules agents break most often
-<!-- From docs/enforcement.md: the ones still enforced only by prose. -->
-1. …
+## Where records live
+<!-- Paste the output of `melon records`. Records look forward (open work, open decisions, direction); the code and its tests document what's built. -->
 
-## Which doc answers what
+## Reference docs
+<!-- Current-state docs only: they describe what's true now and must match the code. -->
 | Question | Read |
 |---|---|
-| How is number X computed? | the spec doc, §n (the section only) |
-| What does term Y mean? | `docs/glossary.md` |
+| How is number X computed? | the rules doc, §n (the section only) |
+| What does term Y mean? | the glossary |
+
+## Rules agents break most often
+<!-- Rules still enforced only by prose. Each is a candidate for melon-correct; delete the line once a check enforces it. -->
+1. …
 
 ## Commands
-- `pnpm melon check` · `pnpm melon gate <pr>` · `pnpm melon status`
+- `melon check` · `melon gate <pr>` · `melon status` · `melon records`

@@ -1,6 +1,6 @@
 ---
 name: melon-correct
-description: Turn recurring agent mistakes into structure - a type, lint, gate rule or test - instead of more prose, and keep docs/enforcement.md pairing each rule with what enforces it. Use after a retro, when the same review finding appears twice, or when the owner says "agents keep doing X".
+description: Turn recurring agent mistakes into structure - a type, lint, gate rule or test - instead of more prose, then delete the prose it replaces. Use after a retro, when the same review finding appears twice, or when the owner says "agents keep doing X".
 ---
 
 # melon-correct
@@ -20,6 +20,6 @@ description: Turn recurring agent mistakes into structure - a type, lint, gate r
    3. **A test** that fails when the rule breaks (for example, a test that scans the UI for colour literals outside the token file).
    4. **Docs.** Only when none of the above can express it.
 4. **Do it or file it.** Small changes (a lint rule, a test) go in one S-tier PR. Anything larger becomes an issue with a brief. Either way, the change must be shown failing on a deliberate violation once.
-5. **Keep the table.** Update `docs/enforcement.md` in the target repo (template: `${CLAUDE_PLUGIN_ROOT}/templates/enforcement.md`): rule → enforced by → since (PR).
+5. **Let the check document itself.** Name the test, lint rule or gate check after the rule it enforces ("never maps an option line as stock"), so `rg` finds the enforcement from the rule's words. The checks are the record; don't keep a separate table of them. Remove the rule from the agent map's "rules agents break most often" list.
 6. **Delete the prose** that the new check makes redundant (in `CLAUDE.md`, process docs or playbooks). Rules a check already enforces shouldn't be repeated in text agents read on every task.
 7. **Reply** (≤10 lines): the classes found, the level chosen for each, PRs and issues, and the prose deleted.

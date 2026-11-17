@@ -22,17 +22,28 @@ Lives at the target repo's root. Every field is optional except where a command 
 | `ci.workflow` | `ci.yml` | merge | the workflow to dispatch |
 | `ci.requiredFor` | `["m", "h"]` | merge | tiers that need green PR CI |
 | `ci.batchAfterSMerges` | `3` | merge | dispatch CI on main after this many S merges |
-| `dailyLog.label`, `dailyLog.titlePrefix` | `daily-log`, `Daily log ` | merge | one issue per day |
+| `records.<name>` | GitHub (below) | merge, status, labels, records | where each record lives: `{ "kind": "github-issues" }`, `{ "kind": "github-issue", "label": "…" }` or `{ "kind": "file", "path": "…" }`. Other kinds are valid config but fail when a command needs them. |
 | `batch.minIssues`, `batch.labels` | `3`; `found-by-agent`, `bug` | batch | when an area is ready to batch, and which issues are candidates |
 | `staleDays` | `3` | status | a non-parked PR with no update for this long shows as stale |
-| `status.untieredLabels` | `daily-log`, `direction`, `owner-attention` | status | issues with these labels never show as "no tier yet" |
+| `status.untieredLabels` | `[]` | status | extra labels for issues that aren't work items (record labels are always excluded) |
 | `areas` | `[]` | labels | `area:*` labels to create |
 | `audits.sourceGlobs`, `audits.ignoreGlobs` | `**/src/**/*.{ts,tsx}`; tests, node_modules, dist | audit | what the scanners read |
 | `audits.tokenFiles` | `[]` | audit | design-token files (literals allowed there; keys checked for use) |
 | `audits.componentMaxLines` | `250` | audit | react-composition size limit |
-| `audits.specDoc` | `null` | audit | a doc with numbered sections (`## 3. …`) that docs-drift checks `§N` references against |
+| `audits.rulesDoc` | `null` | audit | a reference doc with numbered sections (`## 3. …`); docs-drift checks `§N` references against it |
 | `audits.envExample` | `.env.example` | audit | where every env var must be listed |
 | `audits.allowedHosts` | `[]` | audit | known outbound hosts (data sources, providers) |
+
+## Records and their defaults
+| Record | Default | Used by |
+|---|---|---|
+| `workItems` | `{ "kind": "github-issues" }` | status, batch |
+| `decisionLog` | `{ "kind": "github-issue", "label": "decisions", "title": "Decision log" }` | records, labels |
+| `ownerList` | `{ "kind": "github-issue", "label": "owner-attention", "title": "Owner attention" }` | records, labels |
+| `direction` | `{ "kind": "github-issue", "label": "direction", "title": "Direction" }` | records, labels |
+| `dailyLog` | `{ "kind": "github-issue", "label": "daily-log", "titlePrefix": "Daily log ", "per": "day" }` | merge |
+
+Override only what differs, for example `"records": { "ownerList": { "label": "owner" } }`. Work items declare dependencies with a `Depends on: #n` line (also `Blocked by:` or `After:`), which `melon status` reads.
 
 ## Markers the CLI reads
 | Marker (first line of a comment) | Posted by | Read by |

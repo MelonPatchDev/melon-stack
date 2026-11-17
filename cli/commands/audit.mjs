@@ -33,7 +33,7 @@ export function main(args, config) {
   for (const t of cfg.tokenFiles) if (!files.some((f) => f.path === t) && existsSync(join(config.root, t))) files.push(read(t));
   const opt = (p) => (p && existsSync(join(config.root, p)) ? readFileSync(join(config.root, p), 'utf8') : '');
 
-  const flags = audit.scan({ files, cfg, envExample: opt(cfg.envExample), spec: opt(cfg.specDoc) });
+  const flags = audit.scan({ files, cfg, envExample: opt(cfg.envExample), rules: opt(cfg.rulesDoc) });
   const limit = Number(args.flags.limit ?? 60);
   console.log(`Audit ${name}: ${flags.length} flag(s) over ${files.length} file(s).`);
   console.log(`Model pass question: ${audit.focus}\n`);

@@ -62,7 +62,7 @@ test('privacy: unknown hosts and undeclared env vars', () => {
 test('docs-drift: § references to missing sections', () => {
   const flags = docsDrift(
     [{ path: 'a.ts', text: '// per §6 and §15' }],
-    { specDoc: 'docs/SPEC.md' },
+    { rulesDoc: 'docs/SPEC.md' },
     '## 6. Portfolio\n## 14. Simulator\n',
   );
   assert.equal(flags.length, 1);
@@ -85,7 +85,7 @@ test('docs-drift: legal citations and prose without the doc name are ignored', (
       { path: 'CLAUDE.md', text: 'Federal law (5 U.S.C. §552) applies. See §9 of the rules.' },
       { path: 'docs/a.md', text: 'SPEC §15 says so.' },
     ],
-    { specDoc: 'docs/SPEC.md' },
+    { rulesDoc: 'docs/SPEC.md' },
     '## 9. Sectors\n',
   );
   assert.deepEqual(flags.map((f) => `${f.path}:${f.line}`), ['docs/a.md:1']);

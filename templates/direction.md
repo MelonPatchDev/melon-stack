@@ -1,12 +1,13 @@
 # Direction
 
-<!-- The orchestrator keeps this current, and the owner edits it freely. A fresh orchestrator reads it first and must be able to answer: what starts next, why, and what would change the plan. Keep it to about one page. -->
+<!-- The body of the direction record (by default a GitHub issue labelled `direction`; orchestrator hand-offs are its comments). It looks forward only: what's next and why. When a milestone is done, its section goes; the code is the record of what was built.
+The orchestrator keeps it current, and the owner edits it freely. A fresh orchestrator reads it first and must be able to answer: what starts next, why, and what would change the plan. Keep it to about one page. -->
 
 ## Now: <milestone name>
 **For:** <persona> · **Outcome:** <what they can do at the end that they can't now>
 
 ## Why this order
-1. <issue/slice>: <why it comes first; what it unlocks>
+1. #<work item>: <why it comes first; what it unlocks>
 2. …
 
 ## Bets
@@ -17,7 +18,7 @@
 - If <result/signal>, then <what moves up, down or out>.
 
 ## Open questions
-- <question> · owner: <owner|orchestrator> · decide by: <event>
+- <question> · decides: <owner|orchestrator> · by: <event>
 
 ## After this
 <!-- The next milestone or two, in a line each. Not a backlog. -->

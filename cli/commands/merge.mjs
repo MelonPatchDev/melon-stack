@@ -5,6 +5,7 @@ import { isAbsolute, join } from 'node:path';
 import { ciState, comment } from '../lib/github.mjs';
 import { impactSummary, ledgerLine as bodyLedger, localDate } from '../lib/rules.mjs';
 import { gh, ghJson, git, tryRun } from '../lib/sh.mjs';
+import { record } from '../lib/records.mjs';
 import { evaluate } from './gate.mjs';
 import { ledgerFor, ledgerLine } from './ledger.mjs';
 
@@ -25,7 +26,7 @@ export const help = `melon merge <pr> [--ledger "<text>"] [--dry-run]
      A ready PR with no run on its head (main was merged in) gets CI dispatched; exit 3.
      S: no PR CI; the recorded melon check stands in.
   3. Squash-merges (title + " (#n)"), pinned to the gated head, and deletes the branch.
-  4. Adds "- #n <Impact first sentence> (<ledger>)" to today's daily-log issue, creating it
+  4. Adds "- #n <Impact first sentence> (<ledger>)" to today's daily log (records.dailyLog), creating it
      (and closing older ones) when needed.
   5. After ci.batchAfterSMerges S merges since the last CI that covered main, dispatches CI on
      main. An M/H merge resets the count, because its CI ran on a head containing main.
@@ -44,7 +45,7 @@ function readState(file) {
 }
 
 function dailyLog(config, line) {
-  const { label, titlePrefix } = config.dailyLog;
+  const { label, titlePrefix } = record(config, 'dailyLog');
   const title = `${titlePrefix}${localDate(new Date(), config.timeZone)}`;
   const open = ghJson(['issue', 'list', '--state', 'open', '--label', label, '--json', 'number,title', '--limit', '50']);
   let today = open.find((i) => i.title === title);

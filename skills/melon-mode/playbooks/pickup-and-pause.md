@@ -17,6 +17,6 @@ Skip full onboarding. Read, in order:
 3. the PR: Plan, State, Data, Decisions, and every review comment since the last verdict;
 4. `git log --oneline origin/main..HEAD` and the diff of the last commit.
 
-Then run `pnpm melon check` to see where things stand, and continue from State's "next". If State and the code disagree, trust the code, fix State first, and say so in your first message.
+Then run `melon check` to see where things stand, and continue from State's "next". If State and the code disagree, trust the code, fix State first, and say so in your first message.
 
 Orchestrator pick-up is the cold start in the orchestrate playbook (step 0).

@@ -15,7 +15,8 @@ Closes #
 <!-- each criterion, ticked, with how it was checked (test file:line or command) -->
 
 ## Decisions
-<!-- one line each: the decision, why, what it rests on; name the rejected alternative if hard to reverse -->
+<!-- One line each: the decision, why, what it rests on (or "taste call"); name the rejected alternative if hard to reverse.
+Graduations: for each decision-log entry this PR implements, "D<n> → <where it now lives: test file:line, type, lint or gate rule, ground rule, reference doc>". -->
 
 ## Unconfirmed facts
 <!-- "None" if none -->
