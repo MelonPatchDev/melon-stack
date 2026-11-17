@@ -1,0 +1,13 @@
+{
+  "name": "melon-stack",
+  "owner": {
+    "name": "MelonPatchDev"
+  },
+  "plugins": [
+    {
+      "name": "melon-stack",
+      "source": "./",
+      "description": "Autonomous Claude Code development on a budget: design-first skills, risk tiers, builder/reviewer test plans, scripted gates, a measured token ledger."
+    }
+  ]
+}

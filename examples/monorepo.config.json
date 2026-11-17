@@ -1,0 +1,45 @@
+{
+  "$comment": "Example melon.config.json for a TypeScript pnpm monorepo (apps/web, apps/api, apps/worker, packages/*). Field reference: docs/config.md.",
+  "mainBranch": "main",
+  "timeZone": "UTC",
+  "signature": "[orchestrator]",
+  "checks": [
+    { "name": "install", "run": "pnpm install --frozen-lockfile", "paths": ["package.json", "**/package.json", "pnpm-lock.yaml"] },
+    { "name": "lint", "run": "pnpm lint", "docsOnly": true },
+    { "name": "typecheck", "run": "pnpm typecheck" },
+    { "name": "test", "run": "pnpm test" },
+    { "name": "build", "run": "pnpm build" },
+    { "name": "e2e", "run": "pnpm test:e2e", "paths": ["apps/web/**", "apps/api/**", "packages/contracts/**"] }
+  ],
+  "docsOnly": ["docs/**", "**/*.md"],
+  "tiers": {
+    "$comment": "H only where a break would be systemic and hard to undo. Check the result against your last ~25 merged PRs: H should be the minority.",
+    "h": ["packages/db/src/schema.ts", "packages/db/migrations/**", "apps/api/src/auth/**", "packages/billing/src/**"],
+    "hEdits": [],
+    "m": ["packages/contracts/**", "apps/worker/src/**", ".github/workflows/**", "deploy/**", "CLAUDE.md", "docs/SPEC.md"],
+    "sMaxChurn": 400,
+    "churnIgnore": ["docs/**", "**/*.md", "**/fixtures/**", "**/*.snap", "pnpm-lock.yaml"]
+  },
+  "hotspots": [
+    { "name": "contracts", "paths": ["packages/contracts/**"], "appendOnly": ["packages/contracts/src/index.ts"] },
+    { "name": "db-schema", "paths": ["packages/db/src/schema.ts", "packages/db/migrations/**"] },
+    { "name": "glossary", "paths": ["docs/glossary.md"], "appendOnly": ["docs/glossary.md"] }
+  ],
+  "migrations": { "paths": ["packages/db/migrations/*.sql"] },
+  "pr": {
+    "requiredSections": ["Plan", "State", "Data", "Impact", "Acceptance criteria", "Decisions", "Unconfirmed facts"],
+    "impactLabel": "What changes and why it matters"
+  },
+  "ci": { "workflow": "ci.yml", "requiredFor": ["m", "h"], "batchAfterSMerges": 3 },
+  "batch": { "minIssues": 3, "labels": ["found-by-agent", "bug"] },
+  "areas": ["web", "api", "worker", "db", "docs", "process"],
+  "audits": {
+    "sourceGlobs": ["apps/*/src/**/*.{ts,tsx}", "packages/*/src/**/*.{ts,tsx}"],
+    "ignoreGlobs": ["**/*.test.{ts,tsx}", "**/test/**", "**/node_modules/**", "**/dist/**"],
+    "tokenFiles": ["apps/web/src/tokens.ts"],
+    "componentMaxLines": 250,
+    "specDoc": "docs/SPEC.md",
+    "envExample": ".env.example",
+    "allowedHosts": ["api.stripe.com"]
+  }
+}
