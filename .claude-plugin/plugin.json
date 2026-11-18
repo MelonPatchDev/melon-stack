@@ -1,6 +1,6 @@
 {
   "name": "melon-stack",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Autonomous Claude Code development on a budget: design-first skills, risk tiers, builder/reviewer test plans, scripted gates, a measured token ledger, playbooks and audits.",
   "author": {
     "name": "MelonPatchDev"
