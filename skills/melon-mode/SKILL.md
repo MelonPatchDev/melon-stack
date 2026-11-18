@@ -65,6 +65,20 @@ Every judgment call, by any role, rests on the first of these that settles it:
 
 A call that rests on none of them is a **taste call**: make it, and list it in the PR's Decisions as "taste call".
 
+### The change questions
+Every role asks these of a change, each at the point where it decides:
+- **Idea:** what is the main idea?
+- **System:** what changes beyond this module, and who else does it affect? A new place for state, a new contract, a new data path, an extension point, a product-specific special case.
+- **Patterns:** does it follow the design intent (the agent map's Design intent, or these principles where the repo states none), or work against it? If it adds a pattern, should the codebase have more of it?
+- **Long term:** what does it unlock, what does it constrain, and what will be hard to change later?
+- **Bugs, tests, types:** these are system changes too. Is a bug a sign of a gap in the design? What do the tests and types say about the contracts between parts?
+
+| Role | Asks them | The answer |
+|---|---|---|
+| builder | while deciding, not after building | a System item or a new pattern is a **checkpoint** before code; the PR records the answers |
+| reviewer | from the diff, **before** reading the PR's answers | an unnamed system change is a blocking finding, with the diff as proof; a pattern blocks only against quoted design intent |
+| orchestrator | at design, and across open PRs | System and Long term go into each brief; System lines are compared across PRs; patterns accepted at merge join the Design intent |
+
 ## 4. Context discipline (the main cost lever)
 Everything you read is paid for again on every later call.
 - **Read order:** `CLAUDE.md`, then `docs/agent-map.md`, then the issue's **brief**, then the code you own. Open other docs only when a step needs them, and read the section, not the file.

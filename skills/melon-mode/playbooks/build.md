@@ -7,13 +7,14 @@
    - Branch `<issue>-<slug>` from the latest `main`.
    - **M/H:** open a **draft** PR at the first push. **S:** open it **ready**; CI only runs on M/H.
    - Fill the PR template.
-3. **Settle the design before code.** Use the glossary's terms, and treat any new or changed term as a checkpoint (step 5). Record each decision in the PR's Decisions as you make it: one line with its basis from the reasoning order (melon-mode §3), and the rejected alternative when it's hard to reverse.
+3. **Settle the design before code,** asking the change questions (melon-mode §3) as you choose, not after. Use the glossary's terms, and treat any new or changed term as a checkpoint (step 5). Record each decision in the PR's Decisions as you make it: one line with its basis from the reasoning order (melon-mode §3), and the rejected alternative when it's hard to reverse.
 4. **M/H: agree the tests before writing code.**
    - **Don't wait for the plan inside your turn,** and never poll `gh` for it. If the orchestrator's prompt doesn't already point you to a posted `TEST PLAN`, end your turn here with one line: `READY FOR PLAN #<n>`. The orchestrator wakes you when it's posted.
    - Read the plan, then reply on the issue: `PLAN AGREED`, or start with `PLAN DIFFERS` and list only the points where you read the issue differently, each with its reason.
    - Agreed: carry on. Differs: end your turn with `WAITING ON PLAN ANSWER #<n>`. One exchange; anything still open is the orchestrator's call, and it wakes you with the result.
 5. **Checkpoint on what you can't settle alone.** End your turn with that list (≤10 lines) when either:
    - a decision is hard to reverse and the brief didn't settle it: a schema or stored format, a shared contract, a new or changed glossary term, or reversing a recorded decision;
+   - the change would add something to the system the brief didn't name: a new place for state, a new contract, a new data path, an extension point, a product-specific special case, or a pattern the design intent doesn't have;
    - you need to change anything outside your owned paths.
 
    Problems you find elsewhere become issues labelled `found-by-agent tier:s area:<x>`, one paragraph each; don't fix them. If `git log`/`git blame` shows a merged PR introduced the problem, add a line `Caused by: #<pr>`. That's how `melon escapes` measures what review let through.
@@ -28,7 +29,7 @@
 8. **Hand back.**
    - Merge the latest `main` in (never rebase a pushed branch, never force-push).
    - Run `melon check --full`; for S, `melon check --record <pr>` on the committed head. If it still fails after one fix, stop and say what fails and why in State.
-   - Fill in Impact and Acceptance criteria, each with how it was checked. Set State to "ready for gate".
+   - Fill in Impact (the change questions, a line each: Idea and System for S, all of them for M/H) and Acceptance criteria, each with how it was checked. They record decisions already made at your checkpoints; nothing in them should be news. Set State to "ready for gate".
    - Run `melon gate <pr>`. The only failures left should be the reviewer's verdict or CI.
    - Final message: ≤10 lines, with the commands you ran, their results, checkpoint items and anything unconfirmed. Don't merge or mark the PR ready.
 9. **Fix rounds.** Fix what was proven and answer the rest on the PR. Re-run only the checks the change touches, but run `--full` if merging `main` brought conflicts in shared code. Update State.

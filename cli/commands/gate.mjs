@@ -11,6 +11,7 @@ import {
   latestVerdict,
   maxTier,
   missingSections,
+  blankLabels,
   requiredTier,
   tierFromLabels,
   todoViolations,
@@ -124,6 +125,8 @@ export function evaluate(number, config, { fix = false } = {}) {
   add(issues.length > 0, 'closes an issue', issues.length ? issues.map((i) => `#${i}`).join(', ') : 'add "Closes #<n>"');
   const missing = missingSections(pr.body, config.pr.requiredSections);
   add(missing.length === 0, 'PR sections', missing.length ? `missing: ${missing.join(', ')}` : '');
+  const blank = blankLabels(pr.body, config.pr.changeQuestions?.[tier] ?? []);
+  add(blank.length === 0, 'change questions answered', blank.length ? `blank or missing for tier:${tier}: ${blank.join(', ')}` : '');
 
   // TODOs in added lines.
   const todos = files.filter((f) => !matchesAny(f.path, config.todo.ignore)).flatMap((f) => todoViolations(f, config.todo.pattern));

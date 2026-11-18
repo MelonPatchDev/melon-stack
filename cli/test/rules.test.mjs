@@ -11,7 +11,9 @@ import {
   groupByArea,
   hasMarker,
   hotspotsHeld,
+  blankLabels,
   impactSummary,
+  labelLine,
   isBelow,
   latestCheck,
   latestVerdict,
@@ -238,4 +240,13 @@ test('escapeReport: escape rate per tier of the PRs that caused later issues', (
     m: { merged: 2, escaped: [{ pr: 2, issues: [50, 51] }] },
     '?': { merged: 1, escaped: [] },
   });
+});
+
+test('labelLine and blankLabels: the change questions in a PR body', () => {
+  const b = '## Impact\n**Idea:** shows every row. More.\n**System:** none\n**Patterns:** <!-- placeholder -->\n**Long term:**\n';
+  assert.equal(labelLine(b, 'System'), 'none');
+  assert.equal(labelLine(b, 'Patterns'), '');
+  assert.equal(labelLine(b, 'Missing'), null);
+  assert.deepEqual(blankLabels(b, ['Idea', 'System', 'Patterns', 'Long term']), ['Patterns', 'Long term']);
+  assert.equal(impactSummary(b, 'Idea'), 'shows every row.');
 });

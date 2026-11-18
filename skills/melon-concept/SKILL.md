@@ -17,6 +17,7 @@ The repo's `CLAUDE.md` wins over anything here. Design lives in **records**, not
 - **Start from the code on `main`,** never from memory or an old outline. Use an Explore subagent if the idea spans packages.
 - **Detail where ambiguity causes bugs, nowhere else.** Be specific about data (entities, fields, nullability), state transitions, computation rules, and domain edge cases that need a decision. Keep UI directional. Leave routes, component names, visual design and internal function signatures to the builder. Over-specifying costs every reader tokens and constrains the builder.
 - **Terms:** a new or overloaded word gets one meaning in the glossary, in the same change that introduces it.
+- **Ask the change questions of each slice** (melon-mode §3), above all **System** and **Long term**: what new state, contracts and data paths it adds, who else they affect, and what it will make hard to change later. Answered here, they're a line in the brief; discovered in review, they're a fix round.
 - **Decide the tier as you go:** would a break here be systemic and hard to undo (formula code, stored format, auth)?
 - **Park what you can't settle,** each with why it's deferred and what would decide it. A parked question is fine; a guessed answer isn't.
 - **Stop** when the data model is solid, the UI is clear enough to build, and the unknowns are parked.

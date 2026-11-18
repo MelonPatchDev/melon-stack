@@ -85,7 +85,7 @@ function setup() {
   g('checkout', '-q', '7-small');
 
   const body = (n) =>
-    `Closes #${n}\n\n**Plan:** p\n\n**State:** ready for gate\n\n## Impact\n**What changes and why it matters:** the list now shows every row. More text.\n`;
+    `Closes #${n}\n\n**Plan:** p\n\n**State:** ready for gate\n\n## Impact\n**Idea:** the list now shows every row. More text.\n**System:** none\n**Patterns:** follows the list pattern\n**Long term:** nothing hard to change\n`;
   const pr = (number, extra) => ({
     number,
     title: `PR ${number}`,
@@ -447,4 +447,25 @@ test('escapes: merge tags the fix in the daily log; the report counts escapes pe
   assert.match(r.out, /\| s \| 1 \| 0 \| 0% \| — \|/);
   assert.match(r.out, /\| m \| 1 \| 1 \| 100% \| #8 → #107 \|/);
   assert.equal(t.run('escapes', '--since', 'yesterday').code, 2);
+});
+
+test('gate requires the change questions by tier, and blank answers fail', () => {
+  const t = setup();
+  t.setState((s) => {
+    s.prs[8].body = s.prs[8].body.replace('**Patterns:** follows the list pattern', '**Patterns:** <!-- todo -->');
+    s.prs[7].body = s.prs[7].body.replace(/\*\*Patterns:\*\*[^\n]*\n\*\*Long term:\*\*[^\n]*\n/, '');
+  });
+  const m = t.run('gate', '8');
+  assert.match(m.out, /✗ change questions answered — blank or missing for tier:m: Patterns/);
+  const s = t.run('gate', '7');
+  assert.match(s.out, /✓ change questions answered/, 'S needs only Idea and System');
+});
+
+test('status shows each open PR\'s System line', () => {
+  const t = setup();
+  t.setState((s) => {
+    s.prs[8].body = s.prs[8].body.replace('**System:** none', '**System:** new cache table read by the API and the worker');
+  });
+  const r = t.run('status', '--no-slots');
+  assert.match(r.out, /- #8 PR 8 \[tier:m, draft\] → #108\n {4}system: new cache table read by the API and the worker/);
 });

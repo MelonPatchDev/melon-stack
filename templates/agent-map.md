@@ -7,6 +7,11 @@
 |---|---|
 | `apps/…` | |
 
+## Design intent
+<!-- The patterns this codebase wants more of, and the ones it wants less of, one line each with an example file. Reviewers block a change only against a line here, so keep it short and true. The orchestrator adds patterns the review accepted. Where this section is empty, the melon-mode principles apply. -->
+- More of: <pattern> (e.g. `path/to/example.ts`)
+- Less of: <pattern>
+
 ## Where records live
 <!-- Paste the output of `melon records`. Records look forward (open work, open decisions, direction); the code and its tests document what's built. -->
 

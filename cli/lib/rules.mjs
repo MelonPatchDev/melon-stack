@@ -145,6 +145,18 @@ export function closedIssues(body) {
   return [...out];
 }
 
+/** The text after a bold label (`**System:** …`) on its line, comments removed; null if absent. */
+export function labelLine(body, label) {
+  const n = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const m = new RegExp(`\\*\\*${n}:?\\*\\*:?([^\\n]*)`, 'i').exec(body ?? '');
+  return m ? m[1].replace(/<!--[\s\S]*?(-->|$)/g, '').trim() : null;
+}
+
+/** Labels that are missing, or present with nothing but a placeholder comment. */
+export function blankLabels(body, labels) {
+  return labels.filter((l) => !labelLine(body, l));
+}
+
 /** First sentence of the Impact section's first point: the daily-log summary. */
 export function impactSummary(body, label = 'What changes and why it matters') {
   const text = (body ?? '').replace(/<!--[\s\S]*?-->/g, '');

@@ -72,6 +72,16 @@ Every issue and PR carries exactly one tier label.
 - **Check the floor against history.** On the original project's last 25 merged PRs, a broad H list (whole packages, any touch of the rules doc) put 21 at H, which would have cost more than having no tiers. A systemic-only list put 12 there, every one of them formula, auth, migration or rate-limit code. For a numbers-heavy app that's honest, which is why review depth inside H is per file.
 - Anyone may raise a tier. Only the orchestrator lowers one, and it records why on the PR.
 
+## The change questions
+Every role evaluates a change with the same five questions: **Idea** (the main idea), **System** (what changes beyond this module, and who else it affects: new state, contracts, data paths, extension points, product-specific cases), **Patterns** (does it follow the design intent, or add a pattern worth having more of), **Long term** (what it unlocks, constrains, and makes hard to change), and **bugs, tests and types** read as statements about the system's contracts.
+
+They're asked **where each role decides**, not filled in afterwards, because an answer written after the code tends to justify it:
+- **The builder** asks them while choosing. A System item or a new pattern is a checkpoint before code, and the PR's Impact section records the answers.
+- **The reviewer** predicts the system effect in its test plan, then writes its own System line from the diff *before* reading the PR's. A system change nobody named is blocking, with the diff as proof. A pattern blocks only against a quoted line of the design intent.
+- **The orchestrator** puts System and Long term into each brief at design time, compares open PRs' System lines (`melon status` prints them) to catch collisions hotspots can't see, and adds patterns accepted at merge to the agent map's **Design intent**, so the intent stays current with the code.
+
+`melon gate` requires the answers by tier: Idea and System for S, all four for M and H.
+
 ## Roles
 
 | Role | Owns | Doesn't do |

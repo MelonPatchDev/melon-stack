@@ -7,9 +7,12 @@ Closes #
 **Data:** <!-- where real data, caches or DB volumes for this work live (outside the worktree), or "none" -->
 
 ## Impact
-**What changes and why it matters:** <!-- the first sentence becomes the daily-log line -->
-**What it unlocks:**
-**User experience:** <!-- compare with the issue's UX effect line -->
+<!-- The change questions (melon-mode §3), a line each. S: Idea and System. M/H: all four. They record decisions made while building; nothing here should be news to the reviewer. -->
+**Idea:** <!-- the main idea; the first sentence becomes the daily-log line -->
+**System:** <!-- what changes beyond this module, and who else it affects: new state, contracts, data paths, extension points, product-specific cases. "None" if none. For a bug fix: is it a gap in the design? -->
+**Patterns:** <!-- follows the design intent, or adds a pattern the codebase should have more of (and why) -->
+**Long term:** <!-- what it unlocks, what it constrains, what will be hard to change later -->
+**User experience:** <!-- what each persona sees differently; compare with the issue's UX effect line -->
 
 ## Acceptance criteria
 <!-- each criterion, ticked, with how it was checked (test file:line or command) -->

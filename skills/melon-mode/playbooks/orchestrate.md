@@ -15,6 +15,7 @@
 - Take the order in the direction record. `melon status` lists what's **ready** (every `Depends on:` closed) and what each item unlocks. Fill up to **3 builders** on parallel work. It's a rolling priority order, not lockstep batches: whenever a builder frees up, start the highest-priority ready issue.
 - `melon status` shows the hotspots and migration each open PR holds. Don't start an issue that would modify a held hotspot, and allow **one migration in flight**.
 - `parked` PRs are invisible to scheduling. Leave them alone.
+- **Read the System lines** `melon status` prints for open PRs. Two PRs adding a place for the same state, or two contracts for the same thing, is a collision no hotspot check sees: sequence them, or settle which one wins, before either merges.
 - Small finds: run `melon batch`. An area marked ● is ready, and `--create` turns it into one maintenance issue for one builder session.
 
 ## 2. Make sure the issue has a brief
@@ -71,7 +72,8 @@ At hand-back (State "ready for gate"):
   - **graduations are scripted:** `melon gate` already checked that every open decision-log entry for this work has a `D<n> → <where>` line, and that the named file and line exist. `melon merge` removes those entries from the log. You don't re-check them; the reviewer checked that each graduation really protects the decision;
   - read the PR's `Data:` line before removing its worktree or volumes;
   - set statuses;
-  - if the merge changed priorities or taught something, update the direction record ("What would change the plan"), and remove finished milestones from it.
+  - if the merge changed priorities or taught something, update the direction record ("What would change the plan"), and remove finished milestones from it. Its **Long term** answer (what it unlocks or constrains) is the usual source;
+  - **a new pattern** the review accepted joins the agent map's Design intent, so the next agent follows it. A pattern rejected twice goes to `melon-correct`.
 - **If something bad lands on `main`:** revert the merge at once (`git revert` in a PR, merged through `melon merge` as S), reopen the work item, and open a bug issue with `Caused by: #<the bad PR>` so it counts as an escape. Fix forward in a new PR.
 
 ## 6. Audits and lessons

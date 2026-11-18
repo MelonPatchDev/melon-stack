@@ -1,7 +1,7 @@
 // melon status: the live board, built from the tracker. Nobody maintains a status table by hand.
 import { getPrFiles, listOpenIssues, listOpenPrs } from '../lib/github.mjs';
 import { readiness, recordLabels } from '../lib/records.mjs';
-import { addsMigration, closedIssues, hotspotsHeld, tierFromLabels } from '../lib/rules.mjs';
+import { addsMigration, closedIssues, hotspotsHeld, labelLine, tierFromLabels } from '../lib/rules.mjs';
 import { ghJson } from '../lib/sh.mjs';
 
 export const help = `melon status [--no-slots]
@@ -40,6 +40,8 @@ export function main(args, config) {
       if (addsMigration(files, config.migrations)) tags.push('MIGRATION');
     }
     console.log(`- #${p.number} ${p.title} [${tags.join(', ')}]${closes.length ? ` → ${refs(closes)}` : ''}`);
+    const system = labelLine(bodies.get(p.number), 'System');
+    if (system) console.log(`    system: ${system.length > 140 ? `${system.slice(0, 137)}...` : system}`);
   }
 
   const { ready, waiting, unlocks } = readiness(issues);

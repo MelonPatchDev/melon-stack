@@ -20,7 +20,9 @@ export const DEFAULTS = {
   migrations: { paths: [] },
   pr: {
     requiredSections: ['Plan', 'State', 'Data', 'Impact', 'Decisions', 'Unconfirmed facts'],
-    impactLabel: 'What changes and why it matters',
+    impactLabel: 'Idea',
+    // The change questions each tier must answer in the PR's Impact section.
+    changeQuestions: { s: ['Idea', 'System'], m: ['Idea', 'System', 'Patterns', 'Long term'], h: ['Idea', 'System', 'Patterns', 'Long term'] },
   },
   todo: { pattern: '\\bTODO\\b(?!\\s*[(:]?\\s*#\\d+)', ignore: ['**/*.md'] },
   ci: { workflow: 'ci.yml', requiredFor: ['m', 'h'], batchAfterSMerges: 3 },

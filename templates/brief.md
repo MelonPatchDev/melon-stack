@@ -8,6 +8,7 @@
 **Owned paths:** <!-- globs; anything else is a checkpoint -->
 **Stop point:** <!-- what not to build here, and the interface or fixture to build against instead -->
 **Hotspots it may touch:** <!-- from melon status; "none" if none -->
+**System and long term:** <!-- new state, contracts or data paths this adds, who else they affect, and what it will make hard to change later; "none" if none -->
 **UX effect:** <!-- what each persona sees differently -->
 
 ### Design and rule excerpts
