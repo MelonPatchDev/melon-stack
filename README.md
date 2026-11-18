@@ -54,7 +54,12 @@ idea ──melon-concept──▶ spec + sliced issues (briefs, tiers, dependenc
 The orchestrator sets the tier. The CLI only ever raises it, from the paths and size of the change.
 
 ### What it costs
-There are no per-tier numbers yet. The project melon-stack grew out of spent about 80M input tokens per merged PR before these rules ([design.md](docs/design.md#the-cost-model)); most of that was agents re-reading their own history, which is what tiers, briefs and scripts cut. melon-stack's own instructions are small: about 4–6k tokens per role. To get your numbers, run `melon ledger --since <date>` before and after adopting, and `melon escapes` to check that cheaper review isn't letting defects through.
+The project melon-stack grew out of spent about 87M raw tokens per merged PR before these rules, and 40–45M after it added a session cap ([design.md](docs/design.md#the-cost-model)); most of that was agents re-reading their own history, which is what tiers, briefs and scripts cut. The first session after adopting 0.6.0 ([field report](https://github.com/MelonPatchDev/melon-stack/issues/1)) merged 5 PRs in about 2 hours:
+- an H PR (a migration plus a query rewrite, ~4k lines) built almost from scratch cost about **30M raw**: roughly 1.5× cheaper than the capped baseline and 3× cheaper than the original;
+- the orchestrator's own overhead was about **1%** of the day's tokens;
+- 1 fix round in 5 PRs, 1 red CI run, no reverts. Escape rates aren't known yet.
+
+That's one session with a different model mix, and 0.6.0's ledger over-charged sessions that only visited a PR's branch, so treat the numbers as upper bounds. melon-stack's own instructions are about 4–6k tokens per role. To get your numbers, run `melon ledger --since <date>` before and after adopting, and `melon escapes` to check that cheaper review isn't letting defects through.
 
 melon-stack's playbooks carry process only. Your product's rules (how numbers render, how data is handled) go in your `CLAUDE.md`; [examples/ground-rules.md](examples/ground-rules.md) shows the kind.
 
@@ -110,11 +115,12 @@ Companions we recommend but don't bundle: Anthropic's [`frontend-design`](https:
 
 | Command | Does |
 |---|---|
-| `melon check [--full] [--record <pr>]` | runs the checks for the changed paths; prints **only failures**; `--record` posts the pass, pinned to the commit |
+| `melon check [--full] [--record <pr>]` | runs the checks for the changed paths; prints **only failures**, and a last line with the result; a check whose `needs` probe fails is **not run**, never passed; `--record` posts the pass, pinned to the commit, listing any check that didn't run |
 | `melon gate <pr> [--fix]` | the mechanical merge conditions: tier, PR sections, TODOs, hotspots, migration slot, clean merge, decisions graduated, test plan and verdict |
 | `melon focus <pr> [--diff]` | the files a reviewer must read in depth, and their diff alone |
-| `melon merge <pr>` | gate → CI per tier → squash → daily-log line with the measured ledger → graduated decisions leave the log → batch CI on `main` |
-| `melon ledger <pr>` · `--since <date>` | what the PR really cost, by role, from the session transcripts · over a period, work vs. overhead (design and the orchestrator's own sessions, split), per merged PR |
+| `melon merge <pr>` | gate → CI per tier (and for an S PR whose checks didn't all run) → squash → daily-log line with the measured ledger → graduated decisions leave the log → batch CI on `main`; run again to finish a merge that stopped part-way |
+| `melon ledger <pr>` · `--since <date>` | what the PR really cost, by role, from the session transcripts, counting a session only for its calls on the PR's branch · over a period, work vs. overhead (design and the orchestrator's own sessions, split), per merged PR |
+| `melon context <issue>` | how full the latest agent on the issue is right now; exit 1 over the limit, so a builder hands back at that milestone |
 | `melon escapes [--since <date>] [--settle <days>] [--cost]` | per tier, how many settled merged PRs later needed a fix (`Caused by: #<pr>`), with median cost beside it |
 | `melon status` | the live board: in flight, ready (dependencies closed) in the direction record's order, ready work not placed yet, what each item unlocks, hotspots |
 | `melon decision add --for <#n> --text "…"` | adds an open decision to the log with the next free `D<n>`; safe with several writers |

@@ -57,6 +57,40 @@ test('countBlocking counts bullets under Blocking, not "none"', () => {
   assert.equal(countBlocking('no section'), 0);
 });
 
+test('countBlocking: the marker\'s stated count wins; otherwise any common list formatting counts', () => {
+  assert.equal(countBlocking('REVIEW VERDICT: CHANGES @ abc (2 blocking)\n\nBlocking:\n- a\n'), 2);
+  const v = 'REVIEW VERDICT: CHANGES @ abc\n\n';
+  assert.equal(countBlocking(`${v}**Blocking**\n- a · proof\n`), 1);
+  assert.equal(countBlocking(`${v}### Blocking\n- a\n  - detail\n- b\n`), 2);
+  assert.equal(countBlocking(`${v}Blocking:\n\n1. a\n2. b\n\nNotes:\n- n\n`), 2);
+  assert.equal(countBlocking(`${v}Blocking:\n- a, with a wrapped\n  second line\n**Notes**\n- n\n`), 1);
+});
+
+test('summarize keeps per-branch totals and the latest context size', () => {
+  const u = (read) => ({ input_tokens: 1, cache_creation_input_tokens: 0, cache_read_input_tokens: read, output_tokens: 1 });
+  const s = summarize([call('a', u(100), { gitBranch: 'main' }), call('b', u(900), { gitBranch: '12-fix' }), call('c', u(400), { gitBranch: 'main' })].join('\n'));
+  assert.equal(s.ctx, 401);
+  assert.equal(s.peak, 901);
+  assert.equal(s.byBranch.get('main').calls, 2);
+  assert.equal(s.byBranch.get('12-fix').read, 900);
+});
+
+test('forPr charges a long session only for its calls on the PR\'s branch; named agents whole', () => {
+  const u = (read) => ({ input_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: read, output_tokens: 0 });
+  const session = { description: '', ...summarize([call('a', u(1000), { gitBranch: 'main' }), call('b', u(50), { gitBranch: '12-fix' }), call('c', u(2000), { gitBranch: '13-y' })].join('\n')) };
+  Object.assign(session, attribute({ branches: [...session.branches] }));
+  const reviewer = { description: 'reviewer #12', ...summarize(call('d', u(70), { gitBranch: 'main' })) };
+  Object.assign(reviewer, attribute({ description: reviewer.description }));
+  const other = { description: 'builder #13', ...summarize(call('e', u(80), { gitBranch: '12-fix' })) };
+  Object.assign(other, attribute({ description: other.description }));
+  const got = forPr([session, reviewer, other], { issues: [12], branch: '12-fix' });
+  assert.deepEqual(got.map((t) => [t.role, t.calls, t.read]), [['builder', 1, 50], ['reviewer', 1, 70]]);
+
+  const p = period([{ ...session, first: '2026-03-01T00:00Z' }], { since: '2026-03-01' });
+  assert.deepEqual(p.attributed.map((t) => t.read), [2050]);
+  assert.deepEqual(p.overhead.map((t) => [t.role, t.read]), [['session', 1000]]);
+});
+
 test('period splits attributed work from overhead; forPr matches issues or branch', () => {
   const t = (first, issues, branch = 'main') => ({ first, issues, branches: new Set([branch]), input: 10, write5m: 0, write1h: 0, read: 0 });
   const all = [t('2026-03-01T10:00Z', [5]), t('2026-03-02T09:00Z', []), t('2026-02-01T00:00Z', []), t('2026-03-03T00:00Z', [], '6-x')];

@@ -52,6 +52,6 @@ Never blocking on its own: a system change nobody named (it goes to the orchestr
 6. **Targeted probes only:** run the specific tests you doubt, or a one-off script for a suspected bug. A suspicion without a run is a note, not a blocker.
 7. **Block only by the list below,** each finding with its proof. Everything else is a note or a `found-by-agent` issue.
 8. Post the verdict on the PR (template: `templates/review-verdict.md`). The first line is exactly:
-   `REVIEW VERDICT: APPROVE @ <head sha>` or `REVIEW VERDICT: CHANGES @ <head sha>`
+   `REVIEW VERDICT: APPROVE @ <head sha>` or `REVIEW VERDICT: CHANGES @ <head sha> (<n> blocking)`
    then each T<n> with ✓/✗ and `file:line`, the blocking findings with their proof, and your role tag on the last line. Final reply to the orchestrator: one line per finding.
 9. **Re-check after a fix round:** check only what changed (`git diff <old sha>..<new sha>`) against the findings, then post a new verdict. The latest one counts. Merging `main` in doesn't cost a new verdict; `melon gate` knows that.

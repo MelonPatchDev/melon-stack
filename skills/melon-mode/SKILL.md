@@ -53,7 +53,7 @@ Everything you read is paid for again on every later call.
 - **Never paste raw logs.** `melon check` prints only failures, and full logs are in `.melon/logs/`; `grep` them.
 - **Don't re-read** a file you just edited, or a doc you've already summarised.
 - **Prefer a script to reasoning** for anything mechanical: `melon gate` exists so you don't think about labels or hotspots.
-- **Long jobs** (backfills, data runs) run in the background and write a status file. Check it at milestones; never wait inside a turn.
+- **Long jobs** (backfills, data runs) run in the background and write a status file. Check it at milestones; never wait inside a turn for someone else. Your own job that fits in ~10 minutes runs in the foreground: each turn you end while it runs wakes the orchestrator for nothing.
 
 ## 5. Principles
 These are opinions, not a craft manual: each corrects a default that costs this process tokens or rots the codebase. You know how to engineer; apply these where your default differs.

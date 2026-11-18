@@ -1,14 +1,15 @@
 // melon ledger: what a PR actually cost, from session transcripts, not agents' estimates.
 import { getPr } from '../lib/github.mjs';
 import { collect, countBlocking, fmt, forPr, inputEquivalent, period, totalInputEq } from '../lib/ledger.mjs';
-import { ghJson } from '../lib/sh.mjs';
+import { dirname } from 'node:path';
+import { ghJson, tryRun } from '../lib/sh.mjs';
 import { closedIssues } from '../lib/rules.mjs';
 
 export const help = `melon ledger <pr> [--line] [--projects <dir>]
 melon ledger --since YYYY-MM-DD [--until YYYY-MM-DD] [--projects <dir>]
-  Sums the token use of every transcript attributed to the PR's issues: subagents named
-  "builder #<n>" / "reviewer #<n>" (any role word plus #n), and sessions on a branch starting
-  "<n>-". Reports calls, peak context, raw input/cache/output tokens and an input-equivalent
+  Sums the token use attributed to the PR's issues: subagents named "builder #<n>" /
+  "reviewer #<n>" (any role word plus #n), whole; from any other session, only the calls it made
+  on the PR's branch or a branch starting "<n>-". Reports calls, peak context, raw input/cache/output tokens and an input-equivalent
   total (cache reads 0.1x, 5m cache writes 1.25x, 1h writes 2x), plus review rounds and blocking
   findings from the verdict comments.
   Only sessions run on this machine leave transcripts in ~/.claude/projects; run the ledger
@@ -22,12 +23,21 @@ melon ledger --since YYYY-MM-DD [--until YYYY-MM-DD] [--projects <dir>]
               where it shows.
   --projects  transcript root (default ~/.claude/projects)`;
 
+/**
+ * The main checkout's path, even from a worktree: subagents' transcripts live under the session
+ * that spawned them, which usually ran there, and worktrees nested inside it share the prefix.
+ */
+export function transcriptRoot(config) {
+  const r = tryRun('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd: config.root });
+  return r.status === 0 && r.stdout ? dirname(r.stdout) : config.root;
+}
+
 export function ledgerFor(number, config, projectsDir) {
   const pr = getPr(number);
   const issues = new Set(closedIssues(pr.body));
   const branchIssue = /^(\d+)-/.exec(pr.headRefName)?.[1];
   if (branchIssue) issues.add(Number(branchIssue));
-  const transcripts = forPr(collect(config.root, projectsDir), { issues: [...issues], branch: pr.headRefName });
+  const transcripts = forPr(collect(transcriptRoot(config), projectsDir), { issues: [...issues], branch: pr.headRefName });
   const byRole = new Map();
   for (const t of transcripts) {
     const r = byRole.get(t.role) ?? { agents: 0, calls: 0, input: 0, write5m: 0, write1h: 0, read: 0, output: 0, peak: 0 };
@@ -62,7 +72,7 @@ function periodReport(args, config) {
     console.log('--since and --until take YYYY-MM-DD');
     return 2;
   }
-  const { attributed, overhead } = period(collect(config.root, args.flags.projects), { since, until });
+  const { attributed, overhead } = period(collect(transcriptRoot(config), args.flags.projects), { since, until });
   const merged = ghJson(['pr', 'list', '--state', 'merged', '--limit', '500', '--json', 'number,mergedAt']).filter((p) => {
     const d = (p.mergedAt ?? '').slice(0, 10);
     return d >= since && d <= until;

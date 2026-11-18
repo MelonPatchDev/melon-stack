@@ -31,10 +31,14 @@ export const help = `melon gate <pr> [--fix] [--json]
     "D<n> → <where>" line, and the file it names exists at the head, with the line or the test
     named after "›"), hotspot clashes and the migration slot against other open PRs, a clean
     merge with main, and evidence for its tier:
-      S: a "MELON CHECK: PASS @ <sha>" comment covering the head (melon check --record)
+      S: a "MELON CHECK: PASS @ <sha>" comment covering the head (melon check --record); checks
+         it lists as "not run" make melon merge run CI. A docs-only S change needs no change
+         questions.
       M/H: a TEST PLAN and "REVIEW VERDICT: APPROVE @ <sha>" covering the head; H also needs
            PLAN AGREED posted after the TEST PLAN (an M builder doesn't wait for the plan)
   A recorded sha covers the head when the PR's only commits since are merges (merging main in).
+  A stale approval lists the paths changed since it; without an approval, the gate says how long
+  ago the reviewer last posted, and whether to resume it (within an hour) or launch a fresh one.
   --fix   raise the tier label to what the paths require
   --json  print the results as JSON`;
 
@@ -47,6 +51,29 @@ function covers(sha, head, cwd, main) {
   if (head.startsWith(sha) || sha.startsWith(head)) return true;
   const r = tryRun('git', ['rev-list', '--no-merges', `${sha}..${head}`, `^origin/${main}`], { cwd });
   return r.status === 0 && r.stdout === '';
+}
+
+/** Files the PR's own commits (not merges of main) changed between `sha` and `head`. */
+function changedSince(sha, head, cwd, main) {
+  const r = tryRun('git', ['log', '--no-merges', '--name-only', '--format=', `${sha}..${head}`, `^origin/${main}`], { cwd });
+  return r.status === 0 ? [...new Set(r.stdout.split('\n').filter(Boolean))] : [];
+}
+
+// A resumed agent re-reads its context from the prompt cache, which lasts about an hour.
+const REVIEWER_CACHE_MINUTES = 60;
+
+/** How long ago the reviewer last posted, and whether to resume it or launch a fresh one. */
+function reviewerAge(comments) {
+  const times = comments
+    .filter((c) => /\[reviewer #\d+\]|^(TEST PLAN|REVIEW VERDICT)\b/m.test(c.body ?? ''))
+    .map((c) => Date.parse(c.createdAt ?? ''))
+    .filter((t) => !Number.isNaN(t));
+  if (!times.length) return '';
+  const minutes = Math.round((Date.now() - Math.max(...times)) / 60000);
+  const age = minutes < 120 ? `${minutes}m` : `${Math.round(minutes / 60)}h`;
+  return minutes < REVIEWER_CACHE_MINUTES
+    ? `; reviewer last posted ${age} ago: resume it`
+    : `; reviewer last posted ${age} ago: launch a fresh one with the TEST PLAN link`;
 }
 
 /** The file's text at `head`, or null when it isn't there. */
@@ -136,8 +163,10 @@ export function evaluate(number, config, { fix = false } = {}) {
   add(issues.length > 0, 'closes an issue', issues.length ? issues.map((i) => `#${i}`).join(', ') : 'add "Closes #<n>"');
   const missing = missingSections(pr.body, config.pr.requiredSectionsByTier?.[tier] ?? config.pr.requiredSections);
   add(missing.length === 0, 'PR sections', missing.length ? `missing: ${missing.join(', ')}` : '');
-  const blank = blankLabels(pr.body, config.pr.changeQuestions?.[tier] ?? []);
-  add(blank.length === 0, 'change questions answered', blank.length ? `blank or missing for tier:${tier}: ${blank.join(', ')}` : '');
+  // A docs-only S change has no system effect to describe; the daily log falls back to the title.
+  const docsOnly = tier === 's' && files.length > 0 && files.every((f) => matchesAny(f.path, config.docsOnly));
+  const blank = docsOnly ? [] : blankLabels(pr.body, config.pr.changeQuestions?.[tier] ?? []);
+  add(blank.length === 0, 'change questions answered', docsOnly ? 'docs only: none needed' : blank.length ? `blank or missing for tier:${tier}: ${blank.join(', ')}` : '');
 
   // TODOs in added lines.
   const todos = files.filter((f) => !matchesAny(f.path, config.todo.ignore)).flatMap((f) => todoViolations(f, config.todo.pattern));
@@ -198,13 +227,17 @@ export function evaluate(number, config, { fix = false } = {}) {
   }
 
   // Evidence for the tier.
+  let ciNeeded = false;
   if (tier === 's') {
     const rec = latestCheck(pr.comments);
-    add(
-      rec?.result === 'PASS' && covers(rec.sha, head, cwd, main),
-      'checks recorded for the head',
-      rec ? `${rec.result} @ ${rec.sha.slice(0, 9)} (${rec.mode})` : 'run `melon check --record <pr>`',
-    );
+    const recorded = rec?.result === 'PASS' && covers(rec.sha, head, cwd, main);
+    add(recorded, 'checks recorded for the head', rec ? `${rec.result} @ ${rec.sha.slice(0, 9)} (${rec.mode})` : 'run `melon check --record <pr>`');
+    // A check that couldn't run locally proved nothing: CI runs it instead (melon merge).
+    const notRun = /not run:\s*([^;)]+)/.exec(rec?.mode ?? '')?.[1]?.trim();
+    if (recorded && notRun) {
+      ciNeeded = true;
+      warn('every check ran locally', `not run: ${notRun}; melon merge runs CI for this PR`);
+    }
   } else {
     const issueComments = issues.flatMap((i) => getIssueComments(i));
     const all = [...issueComments, ...pr.comments];
@@ -213,15 +246,18 @@ export function evaluate(number, config, { fix = false } = {}) {
     add(planned, 'test plan posted', planned ? '' : 'reviewer posts TEST PLAN on the issue or PR');
     if (tier === 'h') add(agreed, 'test plan agreed', agreed ? '' : planned ? 'PLAN AGREED (builder, or the orchestrator when it settles) after the TEST PLAN' : 'needs a TEST PLAN first');
     const v = latestVerdict(pr.comments);
-    add(
-      v?.verdict === 'APPROVE' && covers(v.sha, head, cwd, main),
-      'reviewer approves the head',
-      v ? `${v.verdict} @ ${v.sha.slice(0, 9)}${v.verdict === 'APPROVE' && !covers(v.sha, head, cwd, main) ? ' (new commits since)' : ''}` : 'no verdict yet',
-    );
+    const approved = v?.verdict === 'APPROVE' && covers(v.sha, head, cwd, main);
+    let detail = v ? `${v.verdict} @ ${v.sha.slice(0, 9)}` : 'no verdict yet';
+    if (v?.verdict === 'APPROVE' && !approved) {
+      const changed = changedSince(v.sha, head, cwd, main);
+      detail += ` (new commits since${changed.length ? `, touching ${changed.slice(0, 8).join(', ')}${changed.length > 8 ? ', …' : ''}: re-review those` : ''})`;
+    }
+    if (!approved) detail += reviewerAge(all);
+    add(approved, 'reviewer approves the head', detail);
   }
 
   const ok = results.every((r) => r.ok);
-  return { ok, tier, pr, files, results };
+  return { ok, tier, pr, files, results, ciNeeded };
 }
 
 export function main(args, config) {

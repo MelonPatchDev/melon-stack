@@ -7,7 +7,7 @@ Closes #
 **Data:** <!-- where real data, caches or DB volumes for this work live (outside the worktree), or "none" -->
 
 ## Impact
-<!-- The change questions (melon-mode §3), a line each. S: Idea and System. M/H: all four. They record decisions made while building; nothing here should be news to the reviewer. -->
+<!-- The change questions (melon-mode §3), a line each. S: Idea and System (a docs-only S change needs none). M/H: all four. They record decisions made while building; nothing here should be news to the reviewer. -->
 **Idea:** <!-- the main idea; the first sentence becomes the daily-log line -->
 **System:** <!-- what changes beyond this module, and who else it affects: new state, contracts, data paths, extension points, product-specific cases. "None" if none. For a bug fix: is it a gap in the design? -->
 **Patterns:** <!-- follows the design intent, or adds a pattern the codebase should have more of (and why) -->

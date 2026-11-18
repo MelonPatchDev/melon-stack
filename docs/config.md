@@ -7,7 +7,7 @@ Lives at the target repo's root. Every field is optional except where a command 
 | `mainBranch` | `main` | all | the trunk |
 | `timeZone` | `UTC` | merge | the daily-log day (IANA zone) |
 | `signature` | `[orchestrator]` | merge, batch | last line of comments the CLI posts for the orchestrator |
-| `checks[]` | `[]` | check | `{ name, run, paths?, docsOnly? }`, in run order. Without `paths`, it always runs; with `paths`, only when a changed file matches. `docsOnly: true` means it also runs when every change is docs-only. |
+| `checks[]` | `[]` | check | `{ name, run, paths?, docsOnly?, needs? }`, in run order. Without `paths`, it always runs; with `paths`, only when a changed file matches. `docsOnly: true` means it also runs when every change is docs-only. `needs` is a shell probe (`"docker info"`): when it fails, the check is reported **not run**, never passed, and an S PR recorded that way gets CI at merge. |
 | `docsOnly` | `["docs/**", "**/*.md"]` | check | when every changed path matches, only `docsOnly` checks run |
 | `tiers.h` | `[]` | gate, focus | systemic paths: touching one requires H |
 | `tiers.hEdits` | `[]` | gate, focus | files that require H only when a line is deleted or changed (appending doesn't) |
@@ -51,10 +51,11 @@ Override only what differs, for example `"records": { "ownerList": { "label": "o
 ## Markers the CLI reads
 | Marker (first line of a comment) | Posted by | Read by |
 |---|---|---|
-| `MELON CHECK: PASS @ <sha> (<mode>: <checks>)` | `melon check --record` | gate (S tier) |
+| `MELON CHECK: PASS @ <sha> (<mode>: <checks>[; not run: <checks>])` | `melon check --record` | gate (S tier; `not run` means merge runs CI) |
 | `TEST PLAN` | reviewer, on the issue or PR | gate (M/H) |
 | `PLAN AGREED` | builder | gate (H) |
-| `REVIEW VERDICT: APPROVE @ <sha>` / `CHANGES @ <sha>` | reviewer, on the PR | gate (M/H); the latest counts |
+| `REVIEW VERDICT: APPROVE @ <sha>` / `CHANGES @ <sha> (<n> blocking)` | reviewer, on the PR | gate (M/H); the latest counts. ledger reads the blocking count |
+| `RUNNING <job> #n` | an agent's last line while its own long job runs | the orchestrator: not a hand-back, nothing to do |
 
 ## Lines the CLI reads in bodies
 | Line | Where | Read by |

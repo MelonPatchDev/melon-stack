@@ -1,4 +1,4 @@
-REVIEW VERDICT: <APPROVE|CHANGES> @ <head sha>
+REVIEW VERDICT: <APPROVE|CHANGES> @ <head sha> <!-- CHANGES adds "(<n> blocking)" -->
 
 Plan coverage:
 - T1 ✓ `path/to/test.ts:42`

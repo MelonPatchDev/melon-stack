@@ -182,7 +182,9 @@ test('S tier: gate needs recorded checks; merge squashes, logs and dispatches ba
   const log = Object.values(s.issues).find((i) => i.labels.includes('daily-log'));
   assert.ok(log, 'daily-log issue created');
   assert.match(log.comments[0].body, /^- #7 the list now shows every row\. \(no transcripts found, 0 rounds, 0 findings\)/);
-  assert.ok(t.calls().some((c) => c.startsWith(`pr merge 7 --squash --delete-branch --match-head-commit ${t.sha7}`)));
+  // Only the remote branch is deleted (by git); the local one may be checked out in a worktree.
+  assert.ok(t.calls().some((c) => c.startsWith(`pr merge 7 --squash --match-head-commit ${t.sha7}`)));
+  assert.ok(!t.calls().some((c) => c.includes('--delete-branch')));
   assert.match(r.out, /S merges since CI covered main: 1\/2/);
   assert.ok(!t.calls().some((c) => c.startsWith('workflow run')));
 
@@ -230,11 +232,26 @@ test('M tier: settled plan + approval through a merge commit; draft → ready �
 test('M tier: a new non-merge commit after the approval needs a new verdict', () => {
   const t = setup();
   t.setState((s) => {
-    s.prs[8].comments = [{ body: `REVIEW VERDICT: APPROVE @ ${t.sha7}\n[reviewer #108]`, createdAt: '1' }];
+    s.prs[8].comments = [{ body: `REVIEW VERDICT: APPROVE @ ${t.shaA}\n[reviewer #108]`, createdAt: new Date(Date.now() - 20 * 60000).toISOString() }];
   });
-  const r = t.run('gate', '8');
+  // A non-merge commit after the approval: the gate names what it touched, so the re-review stays scoped.
+  t.g('checkout', '-q', '8-feature');
+  writeFileSync(join(t.work, 'src', 'c.js'), 'more\n');
+  t.g('add', '.');
+  t.g('commit', '-qm', 'more');
+  t.g('push', '-q', '-f', 'origin', 'HEAD:refs/pull/8/head');
+  t.setState((s) => {
+    s.prs[8].headRefOid = t.g('rev-parse', 'HEAD');
+  });
+  let r = t.run('gate', '8');
   assert.equal(r.code, 1, r.out);
-  assert.match(r.out, /✗ reviewer approves the head — APPROVE @ \w+ \(new commits since\)/);
+  assert.match(r.out, /✗ reviewer approves the head — APPROVE @ \w+ \(new commits since, touching src\/c\.js: re-review those\); reviewer last posted 20m ago: resume it/);
+
+  t.setState((s) => {
+    s.prs[8].comments[0].createdAt = new Date(Date.now() - 3 * 3600000).toISOString();
+  });
+  r = t.run('gate', '8');
+  assert.match(r.out, /reviewer last posted 3h ago: launch a fresh one with the TEST PLAN link/);
 });
 
 test('gate --fix raises the tier; TODOs and missing labels fail', () => {
@@ -619,4 +636,102 @@ test('gate (M): a TEST PLAN is enough; the builder does not have to agree it', (
   });
   r = t.run('gate', '8');
   assert.match(r.out, /✗ test plan posted/);
+});
+
+/** Commits a config change to PR 7's head, so later commands run with it. */
+function withConfig(t, edit) {
+  const cfgPath = join(t.work, 'melon.config.json');
+  const cfg = JSON.parse(readFileSync(cfgPath, 'utf8'));
+  edit(cfg);
+  writeFileSync(cfgPath, JSON.stringify(cfg));
+  t.g('commit', '-qam', 'config');
+  t.g('push', '-q', '-f', 'origin', 'HEAD:refs/pull/7/head');
+  t.setState((s) => {
+    s.prs[7].headRefOid = t.g('rev-parse', 'HEAD');
+  });
+}
+
+test('merge: re-run on an already-merged PR finishes logging and graduation, once', () => {
+  const t = setup();
+  t.setState((s) => {
+    s.prs[7].state = 'MERGED'; // an earlier run merged, then stopped before the log
+  });
+  let r = t.run('merge', '7', '--ledger', 'x');
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /already merged; finishing/);
+  assert.ok(!t.calls().some((c) => c.startsWith('pr merge')), 'no second merge');
+  const log = () => Object.values(t.state().issues).find((i) => i.labels.includes('daily-log'));
+  assert.equal(log().comments.length, 1);
+  assert.match(log().comments[0].body, /^- #7 /);
+
+  r = t.run('merge', '7', '--ledger', 'x');
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /Already logged on #\d+/);
+  assert.equal(log().comments.length, 1, 'logged once');
+});
+
+test('check: a check whose needs probe fails is "not run", recorded as such, and S then gets CI', () => {
+  const t = setup();
+  withConfig(t, (cfg) => {
+    cfg.checks = [
+      { name: 'unit', run: 'echo unit ok' },
+      { name: 'e2e', run: 'echo e2e ok', needs: 'exit 1' },
+    ];
+  });
+  let r = t.run('check', '--record', '7');
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /– e2e not run: `exit 1` fails here/);
+  assert.match(r.out, /melon check: INCOMPLETE \(1 passed; not run here: e2e\)\n?$/);
+  assert.match(t.state().prs[7].comments.at(-1).body, /^MELON CHECK: PASS @ \w+ \(changed: unit; not run: e2e\)/);
+
+  r = t.run('gate', '7');
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /! every check ran locally — not run: e2e; melon merge runs CI for this PR/);
+  // CI is now required, so the S PR must contain main like an M one.
+  r = t.run('merge', '7');
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.out, /doesn't contain the latest main/);
+});
+
+test('check: the last line is the result, pass or fail', () => {
+  const t = setup();
+  let r = t.run('check');
+  assert.match(r.out, /melon check: PASS \(1 run\)\n?$/);
+  withConfig(t, (cfg) => {
+    cfg.checks = [{ name: 'unit', run: 'echo boom; exit 1' }];
+  });
+  r = t.run('check');
+  assert.equal(r.code, 1);
+  assert.match(r.out, /melon check: FAIL \(unit\)\n?$/);
+});
+
+test('gate: a docs-only S PR needs no change-question lines', () => {
+  const t = setup();
+  t.setState((s) => {
+    s.files[7] = [{ filename: 'docs/guide.md', status: 'modified', additions: 1, deletions: 0, patch: '@@ -1 +1,2 @@\n x\n+y' }];
+    s.prs[7].body = 'Closes #107\n\n**Plan:** p\n\n**State:** ready\n\n## Impact\nDocs wording.\n';
+  });
+  let r = t.run('gate', '7');
+  assert.match(r.out, /✓ change questions answered — docs only: none needed/);
+  t.setState((s) => {
+    s.files[7][0].filename = 'src/a.js';
+  });
+  r = t.run('gate', '7');
+  assert.match(r.out, /✗ change questions answered — blank or missing for tier:s: Idea, System/);
+});
+
+test('context: the latest agent on an issue, and exit 1 over the limit', () => {
+  const t = setup();
+  const projects = join(t.work, '..', 'projects');
+  const dir = join(projects, t.work.replace(/[/.]/g, '-'), 's1', 'subagents');
+  mkdirSync(dir, { recursive: true });
+  const call = (id, read) => JSON.stringify({ type: 'assistant', gitBranch: '108-x', timestamp: `2026-01-01T00:00:0${id}Z`, message: { id: `m${id}`, usage: { input_tokens: 10, cache_creation_input_tokens: 0, cache_read_input_tokens: read, output_tokens: 1 } } });
+  writeFileSync(join(dir, 'agent-a.jsonl'), [call(1, 5000), call(2, 9000)].join('\n'));
+  writeFileSync(join(dir, 'agent-a.meta.json'), JSON.stringify({ description: 'builder #108' }));
+  let r = t.run('context', '108', '--projects', projects, '--limit', '100000');
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /^builder #108: 9k context now \(peak 9k, 2 calls\)\n?$/);
+  r = t.run('context', '108', '--projects', projects, '--limit', '5000');
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.out, /over 5k: hand back at this milestone/);
 });

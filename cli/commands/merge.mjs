@@ -69,7 +69,8 @@ export const help = `melon merge <pr> [--ledger "<text>"] [--dry-run]
      back to draft and exits 1.
      A ready PR with no run on its head (main was merged in) gets CI dispatched; exit 3.
      S: no PR CI; the recorded melon check stands in.
-  3. Squash-merges (title + " (#n)"), pinned to the gated head, and deletes the branch.
+  3. Squash-merges (title + " (#n)"), pinned to the gated head, and deletes the remote branch
+     (a failure there is a warning; the local branch stays for the orchestrator's worktree cleanup).
   4. Adds "- #n <Impact first sentence> (<ledger>)" to today's daily log (records.dailyLog), creating it
      (and closing older ones) when needed. A closed issue with "Caused by: #p" adds
      " · fixes an escape from #p (tier:x)" (melon escapes counts them).
@@ -77,6 +78,9 @@ export const help = `melon merge <pr> [--ledger "<text>"] [--dry-run]
      when it's an issue; a file log is listed for the orchestrator to edit.
   6. After ci.batchAfterSMerges S merges since the last CI that covered main, dispatches CI on
      main. An M/H merge resets the count, because its CI ran on a head containing main.
+  S: CI runs as for M when the recorded melon check lists checks that couldn't run locally.
+  Run it again on a PR that's already merged to finish what an interrupted run skipped: steps
+  4–6 run unless the daily log already has the PR's line.
   --ledger   the ledger text; otherwise a "Ledger:" line in the PR body, otherwise the measured
              ledger from session transcripts (melon ledger <pr> --line)
   --dry-run  stop before merging and print what would happen
@@ -89,6 +93,59 @@ function statePath(config) {
 
 function readState(file) {
   return existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : { sMergesSinceMainCi: 0 };
+}
+
+/** The daily-log issue that already has a line for #n, if any (recent logs, open or closed). */
+function loggedOn(config, number) {
+  const { label } = record(config, 'dailyLog');
+  const logs = ghJson(['issue', 'list', '--state', 'all', '--label', label, '--json', 'number,comments', '--limit', '7']) ?? [];
+  return logs.find((i) => (i.comments ?? []).some((c) => (c.body ?? '').startsWith(`- #${number} `)))?.number ?? null;
+}
+
+/** Deletes the PR's branch on origin only; never fails the merge. */
+function deleteRemoteBranch(branch, config) {
+  if (!branch) return;
+  const there = tryRun('git', ['ls-remote', '--exit-code', '--heads', 'origin', branch], { cwd: config.root });
+  if (there.status !== 0) return;
+  const r = tryRun('git', ['push', '-q', 'origin', '--delete', branch], { cwd: config.root });
+  if (r.status !== 0) console.log(`! Branch ${branch} not deleted on origin (${r.stderr.split('\n')[0]}); delete it by hand.`);
+}
+
+function logLine(number, pr, args, config) {
+  const summary = impactSummary(pr.body, config.pr.impactLabel) ?? pr.title;
+  const ledger = args.flags.ledger ?? bodyLedger(pr.body) ?? measuredLedger(number, config);
+  return `- #${number} ${summary} (${ledger})${escapeTags(pr.body)}`;
+}
+
+/** Steps 4–6, after the squash-merge. Each is safe to run again. */
+function afterMerge(number, pr, { tier, ciRan, line, resumed }, config) {
+  deleteRemoteBranch(pr.headRefName, config);
+  const already = resumed ? loggedOn(config, number) : null;
+  if (already) {
+    console.log(`Already logged on #${already}.`);
+  } else {
+    console.log(`Logged on #${dailyLog(config, line)}.`);
+  }
+  graduate(pr, config);
+  if (already) return 0; // the S-merge count was taken with the log line
+
+  const file = statePath(config);
+  const state = readState(file);
+  if (ciRan) {
+    state.sMergesSinceMainCi = 0;
+  } else {
+    state.sMergesSinceMainCi += 1;
+    if (state.sMergesSinceMainCi >= config.ci.batchAfterSMerges) {
+      gh(['workflow', 'run', config.ci.workflow, '--ref', config.mainBranch]);
+      console.log(`Dispatched CI on ${config.mainBranch} after ${state.sMergesSinceMainCi} S merges. If it fails, revert the suspect merge.`);
+      state.sMergesSinceMainCi = 0;
+    } else {
+      console.log(`S merges since CI covered ${config.mainBranch}: ${state.sMergesSinceMainCi}/${config.ci.batchAfterSMerges}.`);
+    }
+  }
+  writeFileSync(file, `${JSON.stringify(state, null, 2)}\n`);
+  console.log(`Done: #${number} (tier:${tier}).`);
+  return 0;
 }
 
 function dailyLog(config, line) {
@@ -111,6 +168,18 @@ export function main(args, config) {
     console.log(help);
     return 2;
   }
+  // Already merged (an earlier run stopped part-way): finish steps 4–6 instead of failing the gate.
+  const current = getPr(number);
+  if (current.state === 'MERGED') {
+    const tier = tierFromLabels(current.labels).tier ?? 's';
+    if (args.flags['dry-run']) {
+      console.log(`Dry run: #${number} is merged; would finish logging and graduation.`);
+      return 0;
+    }
+    console.log(`#${number} is already merged; finishing the steps after the merge.`);
+    return afterMerge(number, current, { tier, ciRan: config.ci.requiredFor.includes(tier), line: logLine(number, current, args, config), resumed: true }, config);
+  }
+
   const gate = evaluate(number, config);
   for (const x of gate.results.filter((r) => !r.ok || r.warn)) console.log(`${x.ok ? '!' : '✗'} ${x.name} — ${x.detail}`);
   if (!gate.ok) {
@@ -119,7 +188,7 @@ export function main(args, config) {
   }
   const { pr, tier } = gate;
   const main = config.mainBranch;
-  const needsCi = config.ci.requiredFor.includes(tier);
+  const needsCi = config.ci.requiredFor.includes(tier) || gate.ciNeeded;
 
   if (needsCi) {
     const upToDate = tryRun('git', ['merge-base', '--is-ancestor', `origin/${main}`, pr.headRefOid], { cwd: config.root }).status === 0;
@@ -161,35 +230,14 @@ export function main(args, config) {
     gh(['pr', 'ready', String(number)]);
   }
 
-  const summary = impactSummary(pr.body, config.pr.impactLabel) ?? pr.title;
-  const ledger = args.flags.ledger ?? bodyLedger(pr.body) ?? measuredLedger(number, config);
-  const line = `- #${number} ${summary} (${ledger})${escapeTags(pr.body)}`;
+  const line = logLine(number, pr, args, config);
 
   if (args.flags['dry-run']) {
     console.log(`Dry run: would squash-merge #${number} (tier:${tier}) at ${pr.headRefOid.slice(0, 9)} and log:\n${line}`);
     return 0;
   }
 
-  gh(['pr', 'merge', String(number), '--squash', '--delete-branch', '--match-head-commit', pr.headRefOid, '--subject', `${pr.title} (#${number})`]);
+  gh(['pr', 'merge', String(number), '--squash', '--match-head-commit', pr.headRefOid, '--subject', `${pr.title} (#${number})`]);
   console.log(`Merged #${number} (tier:${tier}).`);
-  const log = dailyLog(config, line);
-  console.log(`Logged on #${log}.`);
-  graduate(pr, config);
-
-  const file = statePath(config);
-  const state = readState(file);
-  if (needsCi) {
-    state.sMergesSinceMainCi = 0;
-  } else {
-    state.sMergesSinceMainCi += 1;
-    if (state.sMergesSinceMainCi >= config.ci.batchAfterSMerges) {
-      gh(['workflow', 'run', config.ci.workflow, '--ref', main]);
-      console.log(`Dispatched CI on ${main} after ${state.sMergesSinceMainCi} S merges. If it fails, revert the suspect merge.`);
-      state.sMergesSinceMainCi = 0;
-    } else {
-      console.log(`S merges since CI covered ${main}: ${state.sMergesSinceMainCi}/${config.ci.batchAfterSMerges}.`);
-    }
-  }
-  writeFileSync(file, `${JSON.stringify(state, null, 2)}\n`);
-  return 0;
+  return afterMerge(number, pr, { tier, ciRan: needsCi, line, resumed: false }, config);
 }
