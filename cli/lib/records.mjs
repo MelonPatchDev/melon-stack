@@ -52,7 +52,7 @@ export function recordLabels(config) {
 /** "Depends on: #12, #14" (or "Blocked by") lines in an issue body or brief. */
 export function dependencies(body) {
   const out = new Set();
-  for (const m of (body ?? '').matchAll(/^\s*[-*]?\s*\**(?:depends on|blocked by|after)\**:?\**\s*(.+)$/gim)) {
+  for (const m of (body ?? '').matchAll(/^\s*[-*]?\s*\**(?:(?:depends on|blocked by)\**:?|after\**:)\**\s*(.+)$/gim)) {
     for (const n of m[1].matchAll(/#(\d+)/g)) out.add(Number(n[1]));
   }
   return [...out];
@@ -112,11 +112,16 @@ export function graduations(body) {
 }
 
 /**
- * The repo file (and line) a graduation names, or null when it names none ("nothing: the code
+ * The repo file (and line, or test name after "›") a graduation names, or null when it names none ("nothing: the code
  * makes it obvious", "ground rule 4"). A file is a token with a slash, or name.ext with a name of
  * two or more characters (so "e.g." isn't one).
  */
 export function graduationTarget(text) {
+  const named = /^(.*?)\s+(?:›|>)\s+["'`]?(.+?)["'`]?\s*$/.exec(text ?? '');
+  if (named) {
+    const t = graduationTarget(named[1]);
+    if (t) return { ...t, name: named[2] };
+  }
   for (const raw of (text ?? '').replace(/`/g, ' ').split(/\s+/)) {
     const tok = raw.replace(/^[([{"']+|[)\]},;"'.]+$/g, '');
     const m = /^([\w@.\-/]+?)(?::(\d+)(?:-\d+)?)?$/.exec(tok);

@@ -17,6 +17,9 @@ Lives at the target repo's root. Every field is optional except where a command 
 | `hotspots[]` | `[]` | gate, status | `{ name, paths, appendOnly? }`. A PR holds a hotspot when it modifies, removes or renames a matching file. New files never count, and neither do `appendOnly` files whose diff deletes no line. |
 | `migrations.paths` | `[]` | gate, status | adding a file here takes the single migration slot |
 | `pr.requiredSections` | Plan, State, Data, Impact, Decisions, Unconfirmed facts | gate | each must appear as a heading (`## X`) or bold label (`**X:**`) |
+| `pr.requiredSectionsByTier` | `{ "s": ["Plan", "State", "Impact"] }` | gate | per-tier override of `pr.requiredSections`; S skips Data, Decisions and Unconfirmed facts |
+| `pr.changeQuestions` | S: Idea, System; M/H: Idea, System, Patterns, Long term | gate | the bold labels in Impact each tier must answer (an answer may sit on the line after the label) |
+| `gate.ownerReviewBlocks` | `false` | gate | `true`: an `owner-review` label holds the merge until the owner removes it (for repos where rule changes must wait for the owner) |
 | `pr.impactLabel` | `Idea` | merge | the bold label whose first sentence becomes the daily-log line |
 | `pr.changeQuestions` | S: `Idea`, `System`; M and H: `Idea`, `System`, `Patterns`, `Long term` | gate, status | bold labels each tier must answer in the PR (a placeholder comment counts as blank); `melon status` prints each open PR's `System` line |
 | `todo.pattern`, `todo.ignore` | TODO without `#n`; `**/*.md` | gate | regex applied to added lines; globs to skip |

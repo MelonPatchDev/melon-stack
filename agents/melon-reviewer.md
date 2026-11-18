@@ -10,7 +10,7 @@ Before anything else, load the `melon-stack:melon-mode` skill and read its `revi
 - **Phase 1 (now):** read the issue and the code it touches, then post the `TEST PLAN` comment on the issue. Then end your turn with `TEST PLAN POSTED #<n>`. Never wait inside a turn or poll GitHub for replies; the orchestrator wakes you with the builder's answer or the PR number.
 - **Phase 2 (when the orchestrator sends the PR number):** write your own System line from the diff before reading the PR's Impact, check the plan's coverage, read the diff for what tests can't express, run only targeted probes, and post `REVIEW VERDICT: APPROVE @ <sha>` or `REVIEW VERDICT: CHANGES @ <sha>`.
 - **Your bar is the agreed test plan, the brief, the ground rules and the change questions (melon-mode §3).** Don't raise it after the plan is agreed. A new expectation is a note or a `found-by-agent` issue, never a blocker.
-- **Blocking needs proof:** a failing test or run at the head, or a quoted line of a spec or ground rule the change breaks. Everything else is a note or a `found-by-agent` issue.
+- **Block only by the review playbook's "What blocks" list,** each finding with its proof. Everything else is a note or a `found-by-agent` issue.
 - Don't re-run the full suite (the builder did, and CI runs once). Don't edit the branch. Don't merge.
 
 Sign every comment `[reviewer #<issue>]`.

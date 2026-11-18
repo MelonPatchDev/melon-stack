@@ -83,3 +83,13 @@ test('graduationTarget: files and lines, but not prose or abbreviations', () => 
   assert.equal(graduationTarget('nothing: the code makes it obvious, e.g. the type'), null);
   assert.equal(graduationTarget('ground rule 4'), null);
 });
+
+test('dependencies: prose starting with "After" is not a dependency', () => {
+  assert.deepEqual(dependencies('After the migration lands, see #12\nAfter: #4'), [4]);
+});
+
+test('graduationTarget: a test name after "›" survives line moves', () => {
+  assert.deepEqual(graduationTarget('src/money.test.ts › "rejects negative amounts"'), { path: 'src/money.test.ts', line: null, name: 'rejects negative amounts' });
+  assert.deepEqual(graduationTarget('`src/money.test.ts` > rejects negative'), { path: 'src/money.test.ts', line: null, name: 'rejects negative' });
+  assert.deepEqual(graduationTarget('src/money.test.ts:42'), { path: 'src/money.test.ts', line: 42 });
+});

@@ -255,7 +255,7 @@ test('batch --create groups small issues by area; skips M-tier and batched ones'
   const s = t.state();
   const batch = Object.values(s.issues).find((i) => i.title.startsWith('Maintenance: web'));
   assert.ok(batch, r.out);
-  assert.deepEqual(batch.labels, ['tier:s', 'area:web', 'maintenance']);
+  assert.deepEqual(batch.labels, ['tier:s', 'area:web', 'maintenance', 'status:ready']);
   assert.match(batch.body, /- \[ \] #20 [\s\S]*#21[\s\S]*#22/);
   assert.ok(!batch.body.includes('#23'));
   for (const n of [20, 21, 22]) {
@@ -444,9 +444,13 @@ test('escapes: merge tags the fix in the daily log; the report counts escapes pe
 
   r = t.run('escapes');
   assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /\| — \| 0 \| 0 \|/); // merged today: not settled yet
+  r = t.run('escapes', '--settle', '0');
+  assert.equal(r.code, 0, r.out);
   assert.match(r.out, /\| s \| 1 \| 0 \| 0% \| — \|/);
   assert.match(r.out, /\| m \| 1 \| 1 \| 100% \| #8 → #107 \|/);
   assert.equal(t.run('escapes', '--since', 'yesterday').code, 2);
+  assert.equal(t.run('escapes', '--settle', 'soon').code, 2);
 });
 
 test('gate requires the change questions by tier, and blank answers fail', () => {
@@ -468,4 +472,38 @@ test('status shows each open PR\'s System line', () => {
   });
   const r = t.run('status', '--no-slots');
   assert.match(r.out, /- #8 PR 8 \[tier:m, draft\] → #108\n {4}system: new cache table read by the API and the worker/);
+});
+
+test('gate: a graduation may name a test, which must exist at the head', () => {
+  const t = setup();
+  t.setState((s) => {
+    s.prs[8].body += '\n## Decisions\n- D6 → src/b.js › "feature"\n- D7 → src/b.js › "no such test"\n';
+  });
+  const r = t.run('gate', '8');
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.out, /decisions graduate — D7 → src\/b\.js has no test named "no such test"$/m);
+  assert.doesNotMatch(r.out, /D6 →/);
+});
+
+test('gate: PLAN AGREED posted before the TEST PLAN does not count', () => {
+  const t = setup();
+  t.setState((s) => {
+    s.issues[108].comments = [
+      { body: 'PLAN AGREED\n[builder #108]', createdAt: '1' },
+      { body: 'TEST PLAN for #108\n- T1 · it works · unit · AC1', createdAt: '2' },
+    ];
+  });
+  const r = t.run('gate', '8');
+  assert.match(r.out, /✗ test plan agreed — PLAN AGREED \(builder, or the orchestrator when it settles\) after the TEST PLAN/);
+});
+
+test('gate: owner-review blocks only when gate.ownerReviewBlocks is on', () => {
+  const t = setup();
+  t.setState((s) => {
+    s.prs[7].labels.push('owner-review');
+  });
+  assert.doesNotMatch(t.run('gate', '7').out, /owner-review/);
+  const cfg = JSON.parse(readFileSync(join(t.work, 'melon.config.json'), 'utf8'));
+  writeFileSync(join(t.work, 'melon.config.json'), JSON.stringify({ ...cfg, gate: { ownerReviewBlocks: true } }));
+  assert.match(t.run('gate', '7').out, /✗ no owner-review label/);
 });

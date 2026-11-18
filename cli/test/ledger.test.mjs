@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { attribute, collect, countBlocking, encodeProjectDir, inputEquivalent, summarize } from '../lib/ledger.mjs';
+import { attribute, collect, countBlocking, encodeProjectDir, forPr, inputEquivalent, period, summarize } from '../lib/ledger.mjs';
 
 const call = (id, u, extra = {}) =>
   JSON.stringify({ type: 'assistant', gitBranch: 'main', timestamp: 't', message: { id, model: 'm', usage: u }, ...extra });
@@ -52,4 +52,13 @@ test('countBlocking counts bullets under Blocking, not "none"', () => {
   assert.equal(countBlocking('REVIEW VERDICT: CHANGES @ abc\n\nBlocking (each with proof):\n- a · proof x\n- b · proof y\n\nNotes:\n- n'), 2);
   assert.equal(countBlocking('Blocking:\n- none\n'), 0);
   assert.equal(countBlocking('no section'), 0);
+});
+
+test('period splits attributed work from overhead; forPr matches issues or branch', () => {
+  const t = (first, issues, branch = 'main') => ({ first, issues, branches: new Set([branch]), input: 10, write5m: 0, write1h: 0, read: 0 });
+  const all = [t('2026-03-01T10:00Z', [5]), t('2026-03-02T09:00Z', []), t('2026-02-01T00:00Z', []), t('2026-03-03T00:00Z', [], '6-x')];
+  const p = period(all, { since: '2026-03-01' });
+  assert.equal(p.attributed.length, 1);
+  assert.equal(p.overhead.length, 2);
+  assert.equal(forPr(all, { issues: [5], branch: '6-x' }).length, 2);
 });

@@ -1,5 +1,6 @@
 ## Brief
-<!-- Written once by the orchestrator (or melon-concept), at design time. The builder starts from this instead of reading every doc. -->
+<!-- Written once by the orchestrator (or melon-concept), at design time. The builder starts from this instead of reading every doc.
+S tier: Goal, Done check and Owned paths are enough; add other fields only when they apply. -->
 **Goal:** <!-- one or two sentences: what users get, and for which persona -->
 **Done check:** <!-- something that can pass or fail: the tests, a command and its expected output, a budget -->
 **Tier:** tier:<s|m|h>, because <!-- the path or risk that sets it -->

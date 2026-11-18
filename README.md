@@ -2,7 +2,7 @@
 
 **Autonomous Claude Code development for people who can't afford to waste tokens.**
 
-Agent teams are powerful, but every agent, every review round and every re-read of a long session costs tokens, and on a hobby budget or a usage-limited subscription those run out. Tools like [pstack](https://github.com/cursor/plugins/tree/main/pstack) show how rigorous agent engineering can be when agent time is cheap. melon-stack asks a different question: **what's the most useful work an agent team can do per token?**
+Agent teams are powerful, but every agent, every review round and every re-read of a long session costs tokens, and on a hobby budget or a usage-limited subscription those run out. Rigorous agent engineering is easy when agent time is cheap. melon-stack asks a different question: **what's the most useful work an agent team can do per token?**
 
 The answer it settles on:
 - **Spend judgment early.** Design questions get settled with you, or by an orchestrator that writes down and flags its decisions, before any builder starts. That's the cheapest place to spend.
@@ -31,13 +31,15 @@ Claude Code prefixes plugin skills, so `melon-mode` is `/melon-stack:melon-mode`
 
 Requirements: Node 22+, `git`, and the GitHub CLI (`gh`) signed in.
 
+Limits: one repo per orchestrator, GitHub for the records, markers and CI dispatch (another tracker fails with a clear message), and Claude Code transcripts on the machine that runs `melon ledger`.
+
 ## How work flows
 
 ```
 idea ──melon-concept──▶ spec + sliced issues (briefs, tiers, dependencies)
      ──orchestrator──▶ builder (+ reviewer for M/H) per issue, up to 3 in parallel
      ──test plan────▶ reviewer posts TEST PLAN before code; builder agrees; tests first
-     ──build────────▶ self-grill, milestones, diff self-review, melon check
+     ──build────────▶ design settled, milestones, diff self-review, melon check
      ──gate─────────▶ melon gate + verdict (M/H) + CI once (M/H)
      ──merge────────▶ melon merge: squash, daily log with the measured ledger
 ```
@@ -81,7 +83,7 @@ The orchestrator sets the tier. The CLI only ever raises it, from the paths and 
 | Playbook | For |
 |---|---|
 | [orchestrate](skills/melon-mode/playbooks/orchestrate.md) | choosing work, briefs, launching agents, merging, hand-offs |
-| [build](skills/melon-mode/playbooks/build.md) | the shared builder steps: self-grill, checkpoints, milestones, hand-back |
+| [build](skills/melon-mode/playbooks/build.md) | the shared builder steps: settle the design, checkpoints, milestones, hand-back |
 | [bug-fix](skills/melon-mode/playbooks/bug-fix.md) | reproduce as a failing test, fix the root cause, fix every occurrence |
 | [feature](skills/melon-mode/playbooks/feature.md) | data shape first, one whole user-visible slice |
 | [refactor](skills/melon-mode/playbooks/refactor.md) | pin behaviour, change structure, prove nothing moved |
@@ -107,8 +109,8 @@ Companions we recommend but don't bundle: Anthropic's [`frontend-design`](https:
 | `melon gate <pr> [--fix]` | the mechanical merge conditions: tier, PR sections, TODOs, hotspots, migration slot, clean merge, decisions graduated, test plan and verdict |
 | `melon focus <pr> [--diff]` | the files a reviewer must read in depth, and their diff alone |
 | `melon merge <pr>` | gate → CI per tier → squash → daily-log line with the measured ledger → graduated decisions leave the log → batch CI on `main` |
-| `melon ledger <pr>` | what the PR really cost, by role, from the session transcripts |
-| `melon escapes [--since <date>]` | per tier, how many merged PRs later needed a fix (`Caused by: #<pr>`) |
+| `melon ledger <pr>` · `--since <date>` | what the PR really cost, by role, from the session transcripts · over a period, work vs. overhead (the orchestrator's own sessions), per merged PR |
+| `melon escapes [--since <date>] [--settle <days>] [--cost]` | per tier, how many settled merged PRs later needed a fix (`Caused by: #<pr>`), with median cost beside it |
 | `melon status` | the live board: in flight, ready (dependencies closed), what each item unlocks, hotspots |
 | `melon records [--check]` | where each record lives in this repo (decision log, owner list, direction, …) |
 | `melon batch [--create]` | groups small bugs by area into one maintenance issue |
@@ -119,13 +121,13 @@ Configure it with `melon.config.json` ([reference](docs/config.md), [example](ex
 
 ## Principles
 
-Fourteen one-line principles live in [`melon-mode`](skills/melon-mode/SKILL.md#5-principles), adapted from pstack and Matt Pocock. Each names the model default it corrects: smallest change, fix root causes, prove it with a test, prefer deep modules, no seam without a second adapter, the code is the documentation, build the lever, explain the number, and so on.
+Fourteen one-line principles live in [`melon-mode`](skills/melon-mode/SKILL.md#5-principles). Each names the model default it corrects: smallest change, fix root causes, prove it with a test, prefer deep modules, no seam without a second adapter, the code is the documentation, build the lever, explain the number, and so on.
 
-melon-stack is deliberately **opinionated about what an agent can't know** (how agents coordinate, what's failed before, where your preferences differ from the model's defaults) **and silent about craft a capable model already has.** There are no spec-writing or module-design tutorials here; see [docs/design.md](docs/design.md#how-opinionated-to-be). If you want craft guidance too, [Matt Pocock's skills](https://github.com/mattpocock/skills) pair well with melon-stack.
+melon-stack is deliberately **opinionated about what an agent can't know** (how agents coordinate, what's failed before, where your preferences differ from the model's defaults) **and silent about craft a capable model already has.** There are no spec-writing or module-design tutorials here; see [docs/design.md](docs/design.md#how-opinionated-to-be).
 
 ## Why it's built this way
 
-[docs/design.md](docs/design.md) has the reasoning: the cost model (context × calls), what the first project measured, why the H tier is narrow, and a table of what we took from pstack and Matt Pocock, what we adapted, and what we skipped as too costly.
+[docs/design.md](docs/design.md) has the reasoning: the cost model (context × calls), what the first project measured, why the H tier is narrow, and what we adapted for a budget or skipped as too costly.
 
 ## Develop
 

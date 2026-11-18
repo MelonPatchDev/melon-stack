@@ -11,6 +11,7 @@ import {
   latestVerdict,
   maxTier,
   missingSections,
+  planAgreedAfterPlan,
   blankLabels,
   requiredTier,
   tierFromLabels,
@@ -23,12 +24,16 @@ import { readDecisionLog } from './records.mjs';
 export const help = `melon gate <pr> [--fix] [--json]
   Checks a PR against the mechanical merge conditions:
     tier label (raised automatically: H for systemic paths or edits to rule docs; M for M paths,
-    held hotspots or code churn over tiers.sMaxChurn), needs-owner/parked, Closes #n, required PR
-    sections, TODOs without an issue number, decisions graduated (every open decision-log entry
-    for a closed issue has a "D<n> → <where>" line, and each file:line it names exists at the head), hotspot clashes and the migration slot against
-    other open PRs, a clean merge with main, and evidence for its tier:
+    held hotspots or code churn over tiers.sMaxChurn), needs-owner/parked (and owner-review when
+    gate.ownerReviewBlocks is on), Closes #n, required PR sections (pr.requiredSectionsByTier for
+    the tier, else pr.requiredSections), the change questions for the tier, TODOs without an issue
+    number, decisions graduated (every open decision-log entry for a closed issue has a
+    "D<n> → <where>" line, and the file it names exists at the head, with the line or the test
+    named after "›"), hotspot clashes and the migration slot against other open PRs, a clean
+    merge with main, and evidence for its tier:
       S: a "MELON CHECK: PASS @ <sha>" comment covering the head (melon check --record)
-      M/H: TEST PLAN + PLAN AGREED comments, and "REVIEW VERDICT: APPROVE @ <sha>" covering the head
+      M/H: a TEST PLAN, then PLAN AGREED posted after it, and "REVIEW VERDICT: APPROVE @ <sha>"
+           covering the head
   A recorded sha covers the head when the PR's only commits since are merges (merging main in).
   --fix   raise the tier label to what the paths require
   --json  print the results as JSON`;
@@ -44,10 +49,10 @@ function covers(sha, head, cwd, main) {
   return r.status === 0 && r.stdout === '';
 }
 
-/** Lines in `path` at `head`, or -1 when the file isn't there. */
-function linesAt(head, path, cwd) {
+/** The file's text at `head`, or null when it isn't there. */
+function fileAt(head, path, cwd) {
   const r = tryRun('git', ['cat-file', '-p', `${head}:${path}`], { cwd });
-  return r.status === 0 ? r.stdout.split('\n').length : -1;
+  return r.status === 0 ? r.stdout : null;
 }
 
 /**
@@ -72,8 +77,10 @@ function checkGraduations({ pr, issues, head, cwd, config, add, warn }) {
     }
     const t = graduationTarget(text);
     if (!t) continue; // a ground rule, or "nothing: the code makes it obvious"; the reviewer checks it
-    const n = linesAt(head, t.path, cwd);
+    const body = fileAt(head, t.path, cwd);
+    const n = body === null ? -1 : body.split('\n').length;
     if (n < 0) bad.push(`${id} → ${t.path} isn't in the PR`);
+    else if (t.name && !body.includes(t.name)) bad.push(`${id} → ${t.path} has no test named "${t.name}"`);
     else if (t.line && t.line > n) bad.push(`${id} → ${t.path}:${t.line} is past the end (${n} lines)`);
   }
   const problems = [
@@ -98,6 +105,10 @@ export function evaluate(number, config, { fix = false } = {}) {
   add(isOpen, 'open', isOpen ? '' : pr.state);
   add(!needsOwner, 'no needs-owner label', needsOwner ? 'waits for an owner-only action' : '');
   add(!parked, 'not parked', parked ? 'remove `parked` first' : '');
+  if (config.gate?.ownerReviewBlocks) {
+    const review = pr.labels.includes('owner-review');
+    add(!review, 'no owner-review label', review ? 'gate.ownerReviewBlocks: the owner removes the label after deciding' : '');
+  }
 
   // Tier: one label, never below what the change requires (paths, edits, churn, hotspots).
   const held = hotspotsHeld(files, config.hotspots);
@@ -123,7 +134,7 @@ export function evaluate(number, config, { fix = false } = {}) {
   // PR body.
   const issues = closedIssues(pr.body);
   add(issues.length > 0, 'closes an issue', issues.length ? issues.map((i) => `#${i}`).join(', ') : 'add "Closes #<n>"');
-  const missing = missingSections(pr.body, config.pr.requiredSections);
+  const missing = missingSections(pr.body, config.pr.requiredSectionsByTier?.[tier] ?? config.pr.requiredSections);
   add(missing.length === 0, 'PR sections', missing.length ? `missing: ${missing.join(', ')}` : '');
   const blank = blankLabels(pr.body, config.pr.changeQuestions?.[tier] ?? []);
   add(blank.length === 0, 'change questions answered', blank.length ? `blank or missing for tier:${tier}: ${blank.join(', ')}` : '');
@@ -198,9 +209,9 @@ export function evaluate(number, config, { fix = false } = {}) {
     const issueComments = issues.flatMap((i) => getIssueComments(i));
     const all = [...issueComments, ...pr.comments];
     const planned = hasMarker(all, 'TEST PLAN');
-    const agreed = hasMarker(all, 'PLAN AGREED');
+    const agreed = planAgreedAfterPlan(all);
     add(planned, 'test plan posted', planned ? '' : 'reviewer posts TEST PLAN on the issue or PR');
-    add(agreed, 'test plan agreed', agreed ? '' : 'builder posts PLAN AGREED (or the orchestrator, when it settles)');
+    add(agreed, 'test plan agreed', agreed ? '' : planned ? 'PLAN AGREED (builder, or the orchestrator when it settles) after the TEST PLAN' : 'needs a TEST PLAN first');
     const v = latestVerdict(pr.comments);
     add(
       v?.verdict === 'APPROVE' && covers(v.sha, head, cwd, main),

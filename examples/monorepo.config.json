@@ -112,7 +112,7 @@
       "Decisions",
       "Unconfirmed facts"
     ],
-    "impactLabel": "What changes and why it matters"
+    "impactLabel": "Idea"
   },
   "ci": {
     "workflow": "ci.yml",

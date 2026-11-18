@@ -43,7 +43,7 @@ export function main(args, config) {
       '',
       `Closes on merge: ${nums}`,
     ].join('\n');
-    const url = gh(['issue', 'create', '--title', `Maintenance: ${area} (${nums})`, '--label', `tier:s,area:${area},maintenance`, '--body', body]);
+    const url = gh(['issue', 'create', '--title', `Maintenance: ${area} (${nums})`, '--label', `tier:s,area:${area},maintenance,status:ready`, '--body', body]);
     const batchNo = url.split('/').pop();
     for (const i of list) {
       gh(['issue', 'edit', String(i.number), '--add-label', 'batched']);

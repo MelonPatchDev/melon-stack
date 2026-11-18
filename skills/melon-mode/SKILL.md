@@ -14,8 +14,10 @@ The repo's `CLAUDE.md` and ground rules win over anything here. The scripted hal
   - **reviewer:** test plan, then verdict; never writes the feature.
 
   Design work before any issue exists uses the `melon-concept` skill.
+
+  **No orchestrator** (one interactive session, "build #42"): the person is the orchestrator. The session builds and launches a `melon-stack:melon-reviewer` for M/H, relaying between them as the orchestrate playbook says. The owner may also play reviewer and post `TEST PLAN` or `REVIEW VERDICT` themselves: the gate reads the markers, not who wrote them.
 - **Tier** is the issue's `tier:s|m|h` label, set by the orchestrator. The change can only raise it (`melon gate --fix`), and only the orchestrator lowers it.
-  - **S:** small changes (no M/H path, no held hotspot, ≤ `sMaxChurn` lines of code). No reviewer agent and no PR CI; `melon check --record` is the evidence.
+  - **S:** small changes (no M/H path, no held hotspot, ≤ `sMaxChurn` lines of code). No reviewer agent and no PR CI; `melon check --record` is the evidence. A short brief and fewer PR sections (Plan, State, Impact).
   - **M:** the default. Test plan agreed before code, one review pass, CI once.
   - **H:** only where a break would be systemic and hard to undo (formula code, stored format, auth). As M, plus a design check before building, an in-depth review of the focus files (`melon focus`), golden tests, and `owner-review` for rule changes.
 
@@ -25,7 +27,7 @@ Read only the playbook you need:
 | Situation | Playbook |
 |---|---|
 | Orchestrating: choosing work, launching agents, merging, hand-off | [orchestrate](${CLAUDE_SKILL_DIR}/playbooks/orchestrate.md) |
-| Building any issue: the shared steps | [build](${CLAUDE_SKILL_DIR}/playbooks/build.md), plus one of the next four |
+| Building any issue: the shared steps | [build](${CLAUDE_SKILL_DIR}/playbooks/build.md), plus the one for the task below (none for docs or copy) |
 | A defect | [bug-fix](${CLAUDE_SKILL_DIR}/playbooks/bug-fix.md) |
 | New or changed behaviour | [feature](${CLAUDE_SKILL_DIR}/playbooks/feature.md) |
 | Structure only, zero behaviour change | [refactor](${CLAUDE_SKILL_DIR}/playbooks/refactor.md) |
@@ -39,6 +41,7 @@ Other skills:
 - design: `melon-concept` (idea → spec → issues), `grilling` (with the user in the loop);
 - quality: `melon-audit`, `melon-correct`, `simplify-single`, `interrogate` (expensive; see the review playbook), `melon-verify` (drive the real app);
 - understanding: `why` (the reasoning behind code, from its PRs and issues);
+- for the person, not agents: `teach`, `sharpen`, `reflect`, `automate-me`;
 - adoption: `melon-setup`.
 
 **Templates** named in the playbooks (`templates/<name>.md`) are in `${CLAUDE_PLUGIN_ROOT}/templates/`: brief, test-plan, review-verdict, pr-body, handoff, direction, decision-log, owner-list, agent-map.
@@ -48,8 +51,8 @@ The process runs on **records**, named by role. `melon records` (or the agent ma
 
 | Record | Holds | Edited by |
 |---|---|---|
-| **work item** | one issue: brief, tier, dependencies, its design discussion | orchestrator, `melon-concept` |
-| **decision log** | open decisions for unfinished work | orchestrator only |
+| **work item** | one issue: brief, tier, dependencies, its design discussion | orchestrator, `melon-concept`; a builder adds only a `Caused by:` line to a bug |
+| **decision log** | open decisions for unfinished work | orchestrator, and `melon-concept` while designing |
 | **owner list** | Needs you / Review later / Coming up / Done | orchestrator only |
 | **direction** | what's next and why; hand-offs as comments | orchestrator; the owner freely |
 | **daily log** | one line per merge, with the ledger | `melon merge` |
@@ -74,11 +77,7 @@ Every role asks these of a change, each at the point where it decides:
 - **Long term:** what does it unlock, what does it constrain, and what will be hard to change later?
 - **Bugs, tests, types:** these are system changes too. Is a bug a sign of a gap in the design? What do the tests and types say about the contracts between parts?
 
-| Role | Asks them | The answer |
-|---|---|---|
-| builder | while deciding, not after building | a System item or a new pattern is a **checkpoint** before code; the PR records the answers |
-| reviewer | from the diff, **before** reading the PR's answers | an unnamed system change is a blocking finding, with the diff as proof; a pattern blocks only against quoted design intent |
-| orchestrator | at design, and across open PRs | System and Long term go into each brief; System lines are compared across PRs; patterns accepted at merge join the Design intent |
+Each role's playbook says where it asks them and what an answer triggers: build (checkpoints), review (your own System line before reading the PR's), orchestrate (briefs, colliding System lines, Design intent).
 
 ## 4. Context discipline (the main cost lever)
 Everything you read is paid for again on every later call.

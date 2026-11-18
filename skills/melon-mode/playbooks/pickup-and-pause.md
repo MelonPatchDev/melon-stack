@@ -16,7 +16,8 @@ Skip full onboarding. Read, in order:
 1. `CLAUDE.md` and `docs/agent-map.md`;
 2. the issue's brief and the TEST PLAN thread;
 3. the PR: Plan, State, Data, Decisions, and every review comment since the last verdict;
-4. `git log --oneline origin/main..HEAD` and the diff of the last commit.
+4. `git log --oneline origin/main..HEAD` and the diff of the last commit;
+5. **the previous agent's worktree, if it still exists:** `git -C <worktree> status --short` and `git -C <worktree> diff --stat`. A stop at a usage limit leaves no `wip:` commit and a stale State; uncommitted work there is the real resume point. Commit it as `wip:` from that worktree and continue there, rather than redoing it.
 
 Then run `melon check` to see where things stand, and continue from State's "next". If State and the code disagree, trust the code, fix State first, and say so in your first message.
 

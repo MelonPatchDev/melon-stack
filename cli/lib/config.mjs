@@ -20,10 +20,14 @@ export const DEFAULTS = {
   migrations: { paths: [] },
   pr: {
     requiredSections: ['Plan', 'State', 'Data', 'Impact', 'Decisions', 'Unconfirmed facts'],
+    // S needs less: no reviewer reads Data or Unconfirmed facts, and S rarely settles a decision.
+    requiredSectionsByTier: { s: ['Plan', 'State', 'Impact'] },
     impactLabel: 'Idea',
     // The change questions each tier must answer in the PR's Impact section.
     changeQuestions: { s: ['Idea', 'System'], m: ['Idea', 'System', 'Patterns', 'Long term'], h: ['Idea', 'System', 'Patterns', 'Long term'] },
   },
+  // ownerReviewBlocks: an `owner-review` label holds the merge until the owner removes it.
+  gate: { ownerReviewBlocks: false },
   todo: { pattern: '\\bTODO\\b(?!\\s*[(:]?\\s*#\\d+)', ignore: ['**/*.md'] },
   ci: { workflow: 'ci.yml', requiredFor: ['m', 'h'], batchAfterSMerges: 3 },
   batch: { minIssues: 3, labels: ['found-by-agent', 'bug'] },

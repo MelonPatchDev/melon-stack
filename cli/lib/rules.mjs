@@ -133,6 +133,15 @@ export const latestVerdict = (comments) =>
 export const latestCheck = (comments) =>
   latest(comments, CHECK, (m) => ({ result: m[1], sha: m[2], mode: m[3] ?? '' }));
 
+/** PLAN AGREED counts only when posted after the first TEST PLAN (comments in posting order). */
+export function planAgreedAfterPlan(comments) {
+  const at = (c) => c.createdAt ?? '';
+  const plans = comments.filter((c) => /^TEST PLAN\b/m.test(c.body ?? ''));
+  if (!plans.length) return false;
+  const first = plans.map(at).sort()[0];
+  return comments.some((c) => /^PLAN AGREED\b/m.test(c.body ?? '') && at(c) >= first);
+}
+
 export const hasMarker = (comments, marker) =>
   comments.some((c) => new RegExp(`^${marker}\\b`, 'm').test(c.body ?? ''));
 
@@ -148,8 +157,14 @@ export function closedIssues(body) {
 /** The text after a bold label (`**System:** …`) on its line, comments removed; null if absent. */
 export function labelLine(body, label) {
   const n = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const m = new RegExp(`\\*\\*${n}:?\\*\\*:?([^\\n]*)`, 'i').exec(body ?? '');
-  return m ? m[1].replace(/<!--[\s\S]*?(-->|$)/g, '').trim() : null;
+  const text = (body ?? '').replace(/<!--[\s\S]*?(-->|$)/g, '');
+  const m = new RegExp(`\\*\\*${n}:?\\*\\*:?([^\\n]*)((?:\\n[^\\n]*)?)`, 'i').exec(text);
+  if (!m) return null;
+  const same = m[1].trim();
+  if (same) return same;
+  // The answer may sit on the next line, unless that line is another label or a heading.
+  const next = m[2].trim();
+  return next && !/^(\*\*[^*]+\*\*|#)/.test(next) ? next : '';
 }
 
 /** Labels that are missing, or present with nothing but a placeholder comment. */
@@ -158,7 +173,7 @@ export function blankLabels(body, labels) {
 }
 
 /** First sentence of the Impact section's first point: the daily-log summary. */
-export function impactSummary(body, label = 'What changes and why it matters') {
+export function impactSummary(body, label = 'Idea') {
   const text = (body ?? '').replace(/<!--[\s\S]*?-->/g, '');
   const n = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const m = new RegExp(`\\*\\*${n}:?\\*\\*:?\\s*([\\s\\S]*?)(?:\\n\\s*\\n|\\n\\*\\*|\\n#|$)`, 'i').exec(text);
@@ -170,7 +185,8 @@ export function impactSummary(body, label = 'What changes and why it matters') {
 
 /** `Ledger: (...)` line in a PR body, if the builder or orchestrator wrote one. */
 export function ledgerLine(body) {
-  return /^\s*\**Ledger:?\**:?\s*(.+)$/im.exec(body ?? '')?.[1]?.trim() ?? null;
+  const text = (body ?? '').replace(/<!--[\s\S]*?(-->|$)/g, '');
+  return /^\s*\**Ledger:?\**:?[ \t]*([^\s:*].*)$/im.exec(text)?.[1]?.trim() ?? null;
 }
 
 /**

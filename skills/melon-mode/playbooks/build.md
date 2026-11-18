@@ -1,6 +1,6 @@
 # Build (shared steps for every builder)
 
-**You own one issue from brief to merge-ready, inside its owned paths.** Use this with the task playbook (bug-fix, feature, refactor, systemic, maintenance-batch or perf). The steps fix what other agents depend on; how you engineer is yours.
+**You own one issue from brief to merge-ready, inside its owned paths.** Use this with the task playbook (bug-fix, feature, refactor, systemic, maintenance-batch or perf); a docs or copy change needs none. The steps fix what other agents depend on; how you engineer is yours.
 
 1. **Understand, cheaply.** Read `CLAUDE.md`, `docs/agent-map.md`, the issue with its brief and comments, then the code you own. Send wide questions to an Explore subagent. If the brief is wrong or impossible (a missing dependency, a held hotspot, a conflict with a ground rule), **stop before writing code** and tell the orchestrator in ≤5 lines.
 2. **Branch and open the PR early.**
@@ -19,16 +19,16 @@
 
    Problems you find elsewhere become issues labelled `found-by-agent tier:s area:<x>`, one paragraph each; don't fix them. If `git log`/`git blame` shows a merged PR introduced the problem, add a line `Caused by: #<pr>`. That's how `melon escapes` measures what review let through.
 6. **Build milestone by milestone.**
-   - Tests first: the agreed plan's (M/H), or the one that proves the fix (S).
+   - Tests first: the agreed plan's (M/H), or the one that proves the fix (S). Docs, copy and config-value changes need no new test: say so in one line under Acceptance criteria.
    - **Between milestones, run only the tests you're working on.** The full suite runs once, at hand-back.
    - **Evidence is tests, not screenshots or videos.**
    - **Medium or large briefs: hand back after each milestone.** Push, update State and `Data:`, and end your turn with ≤5 lines. The orchestrator can see your context size and you can't; it resumes you or hands the next milestone to a fresh builder.
 7. **Read your own diff against the issue** before any full check: every acceptance criterion, the stop point, the Decisions, no debug code, no `TODO` without an issue number.
-   - **Graduate each decision** this work implements (the brief's "Decisions this settles", and any decision-log entry you acted on) into the codebase: a test that fails if it's reversed, a type, a lint or gate rule, a ground rule, or a line in a reference doc. Add `D<n> → <where>` to the PR's Decisions, naming a repo path (`src/money.test.ts:42`) when there is one. `melon gate` fails if an open entry for your issue has no line, or if the file or line doesn't exist.
+   - **Graduate each decision** this work implements (the brief's "Decisions this settles", and any decision-log entry you acted on) into the codebase: a test that fails if it's reversed, a type, a lint or gate rule, a ground rule, or a line in a reference doc. Add `D<n> → <where>` to the PR's Decisions, naming a test as `path › "test name"` when there is one (it survives later edits; `path:line` also works). `melon gate` fails if an open entry for your issue has no line, or if the file, line or test name doesn't exist.
    - Don't write decision logs, ADRs, specs or summaries into the repo.
 8. **Hand back.**
    - Merge the latest `main` in (never rebase a pushed branch, never force-push).
-   - Run `melon check --full`; for S, `melon check --record <pr>` on the committed head. If it still fails after one fix, stop and say what fails and why in State.
+   - Run `melon check --full`; for S, `melon check --full --record <pr>` on the committed head, which runs and records in one pass. If it still fails after one fix, stop and say what fails and why in State.
    - Fill in Impact (the change questions, a line each: Idea and System for S, all of them for M/H) and Acceptance criteria, each with how it was checked. They record decisions already made at your checkpoints; nothing in them should be news. Set State to "ready for gate".
    - Run `melon gate <pr>`. The only failures left should be the reviewer's verdict or CI.
    - Final message: ≤10 lines, with the commands you ran, their results, checkpoint items and anything unconfirmed. Don't merge or mark the PR ready.

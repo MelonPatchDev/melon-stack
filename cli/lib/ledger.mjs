@@ -105,6 +105,28 @@ export function collect(repoRoot, projectsDir = join(homedir(), '.claude', 'proj
   return out.filter((t) => t.calls > 0);
 }
 
+/** Transcripts that belong to a PR: attributed to one of its issues, or run on its branch. */
+export function forPr(transcripts, { issues, branch }) {
+  const set = new Set(issues);
+  return transcripts.filter((t) => t.issues.some((i) => set.has(i)) || (branch && t.branches.has(branch)));
+}
+
+export const totalInputEq = (list) => list.reduce((n, t) => n + inputEquivalent(t), 0);
+
+/**
+ * Cost over a period, by when each transcript started: attributed to work items, and overhead
+ * (the orchestrator's own sessions, design and owner chats: anything with no issue).
+ */
+export function period(transcripts, { since, until = '9999-99-99' }) {
+  const inWindow = transcripts.filter((t) => {
+    const d = (t.first ?? '').slice(0, 10);
+    return d >= since && d <= until;
+  });
+  const attributed = inWindow.filter((t) => t.issues.length);
+  const overhead = inWindow.filter((t) => !t.issues.length);
+  return { attributed, overhead };
+}
+
 /** Blocking findings in a review verdict: bullets under the "Blocking" heading. */
 export function countBlocking(body) {
   const m = /^Blocking[^\n]*\n((?:[ \t]*[-*][^\n]*\n?)+)/im.exec(body ?? '');

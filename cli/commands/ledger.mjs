@@ -1,9 +1,11 @@
 // melon ledger: what a PR actually cost, from session transcripts, not agents' estimates.
 import { getPr } from '../lib/github.mjs';
-import { collect, countBlocking, fmt, inputEquivalent } from '../lib/ledger.mjs';
+import { collect, countBlocking, fmt, forPr, inputEquivalent, period, totalInputEq } from '../lib/ledger.mjs';
+import { ghJson } from '../lib/sh.mjs';
 import { closedIssues } from '../lib/rules.mjs';
 
 export const help = `melon ledger <pr> [--line] [--projects <dir>]
+melon ledger --since YYYY-MM-DD [--until YYYY-MM-DD] [--projects <dir>]
   Sums the token use of every transcript attributed to the PR's issues: subagents named
   "builder #<n>" / "reviewer #<n>" (any role word plus #n), and sessions on a branch starting
   "<n>-". Reports calls, peak context, raw input/cache/output tokens and an input-equivalent
@@ -12,6 +14,10 @@ export const help = `melon ledger <pr> [--line] [--projects <dir>]
   Only sessions run on this machine leave transcripts in ~/.claude/projects; run the ledger
   where the agents ran (cloud sessions keep their own).
   --line      print only the daily-log ledger text (melon merge uses this)
+  --since     the period view: sessions started in the window, split into work attributed to
+              issues and overhead (the orchestrator's own sessions, design and other chats with
+              no issue), with both divided by the PRs merged in the window. Per-PR ledgers leave
+              overhead out; this is where it shows.
   --projects  transcript root (default ~/.claude/projects)`;
 
 export function ledgerFor(number, config, projectsDir) {
@@ -19,9 +25,7 @@ export function ledgerFor(number, config, projectsDir) {
   const issues = new Set(closedIssues(pr.body));
   const branchIssue = /^(\d+)-/.exec(pr.headRefName)?.[1];
   if (branchIssue) issues.add(Number(branchIssue));
-  const transcripts = collect(config.root, projectsDir).filter(
-    (t) => t.issues.some((i) => issues.has(i)) || t.branches.has(pr.headRefName),
-  );
+  const transcripts = forPr(collect(config.root, projectsDir), { issues: [...issues], branch: pr.headRefName });
   const byRole = new Map();
   for (const t of transcripts) {
     const r = byRole.get(t.role) ?? { agents: 0, calls: 0, input: 0, write5m: 0, write1h: 0, read: 0, output: 0, peak: 0 };
@@ -49,7 +53,30 @@ export function ledgerLine({ byRole, rounds, findings }) {
   return `${who}, ${rounds} round${rounds === 1 ? '' : 's'}, ${findings} finding${findings === 1 ? '' : 's'}`;
 }
 
+function periodReport(args, config) {
+  const since = args.flags.since;
+  const until = args.flags.until ?? '9999-99-99';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(since) || (args.flags.until && !/^\d{4}-\d{2}-\d{2}$/.test(until))) {
+    console.log('--since and --until take YYYY-MM-DD');
+    return 2;
+  }
+  const { attributed, overhead } = period(collect(config.root, args.flags.projects), { since, until });
+  const merged = ghJson(['pr', 'list', '--state', 'merged', '--limit', '500', '--json', 'number,mergedAt']).filter((p) => {
+    const d = (p.mergedAt ?? '').slice(0, 10);
+    return d >= since && d <= until;
+  }).length;
+  const a = totalInputEq(attributed);
+  const o = totalInputEq(overhead);
+  const per = (n) => (merged ? fmt(Math.round(n / merged)) : '—');
+  console.log(`Sessions started ${since}${args.flags.until ? ` to ${until}` : ''}: ${merged} PR(s) merged`);
+  console.log(`  attributed to issues  ${fmt(a).padStart(7)} input-eq  (${attributed.length} transcripts)  per merged PR ${per(a)}`);
+  console.log(`  overhead              ${fmt(o).padStart(7)} input-eq  (${overhead.length} transcripts)  per merged PR ${per(o)}`);
+  console.log(`  overhead share        ${a + o ? Math.round((100 * o) / (a + o)) : 0}%`);
+  return 0;
+}
+
 export function main(args, config) {
+  if (args.flags.since) return periodReport(args, config);
   const number = args.positional[0];
   if (!number) {
     console.log(help);

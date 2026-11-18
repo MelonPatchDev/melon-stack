@@ -22,7 +22,7 @@ export function parseArgs(argv) {
   return { positional, flags };
 }
 
-const VALUE_FLAGS = new Set(['record', 'ledger', 'area', 'min', 'limit', 'to', 'projects', 'since']);
+const VALUE_FLAGS = new Set(['record', 'ledger', 'area', 'min', 'limit', 'to', 'projects', 'since', 'until', 'settle']);
 
 async function cli(argv) {
   const [name, ...rest] = argv;

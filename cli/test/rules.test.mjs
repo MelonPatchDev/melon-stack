@@ -18,6 +18,7 @@ import {
   latestCheck,
   latestVerdict,
   ledgerLine,
+  planAgreedAfterPlan,
   localDate,
   maxTier,
   missingSections,
@@ -144,9 +145,12 @@ test('closedIssues reads every closing keyword form', () => {
 });
 
 test('impactSummary: first sentence of the first Impact point; ledger line', () => {
-  assert.equal(impactSummary(body), "bond and preferred lines no longer map as the issuer's stock.");
+  assert.equal(impactSummary(body, 'What changes and why it matters'), "bond and preferred lines no longer map as the issuer's stock.");
+  assert.equal(impactSummary('**Idea:** Bonds map as bonds. More detail.'), 'Bonds map as bonds.');
   assert.equal(impactSummary('nothing here'), null);
   assert.equal(ledgerLine(body), 'builder ~220k / reviewer ~134k tokens');
+  assert.equal(ledgerLine('Ledger: <!-- optional; the orchestrator passes --ledger -->'), null);
+  assert.equal(ledgerLine('**Ledger:** builder 1M'), 'builder 1M');
 });
 
 test('todoViolations: only added lines, issue-numbered TODOs pass', () => {
@@ -249,4 +253,16 @@ test('labelLine and blankLabels: the change questions in a PR body', () => {
   assert.equal(labelLine(b, 'Missing'), null);
   assert.deepEqual(blankLabels(b, ['Idea', 'System', 'Patterns', 'Long term']), ['Patterns', 'Long term']);
   assert.equal(impactSummary(b, 'Idea'), 'shows every row.');
+});
+
+test('labelLine: an answer on the next line counts; another label there does not', () => {
+  assert.equal(labelLine('**Idea:**\nAdds the export.\n**System:** none', 'Idea'), 'Adds the export.');
+  assert.equal(labelLine('**Idea:**\n**System:** none', 'Idea'), '');
+  assert.equal(labelLine('**Idea:** <!-- hint -->\n## Acceptance', 'Idea'), '');
+});
+
+test('planAgreedAfterPlan: agreement must follow the first TEST PLAN', () => {
+  assert.equal(planAgreedAfterPlan([{ body: 'TEST PLAN', createdAt: '1' }, { body: 'PLAN AGREED', createdAt: '2' }]), true);
+  assert.equal(planAgreedAfterPlan([{ body: 'PLAN AGREED', createdAt: '1' }, { body: 'TEST PLAN', createdAt: '2' }]), false);
+  assert.equal(planAgreedAfterPlan([{ body: 'PLAN AGREED', createdAt: '1' }]), false);
 });

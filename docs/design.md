@@ -1,6 +1,6 @@
 # melon-stack design
 
-melon-stack runs software projects with autonomous Claude Code agents **when agent time is the scarce resource**: a hobby budget, usage limits, one person's subscription. It borrows heavily from [pstack](https://github.com/cursor/plugins/tree/main/pstack) and [Matt Pocock's skills](https://github.com/mattpocock/skills). But pstack assumes you can spend agent time freely, and we can't, so every rule here is judged by **useful work per token**.
+melon-stack runs software projects with autonomous Claude Code agents **when agent time is the scarce resource**: a hobby budget, usage limits, one person's subscription. Agent-engineering practice usually assumes you can spend agent time freely. We can't, so every rule here is judged by **useful work per token**.
 
 ## The cost model
 
@@ -31,7 +31,7 @@ Anything a capable model would do unprompted is deleted. Whether a cut was right
 idea ──melon-concept──▶ spec in a work item + sliced issues (briefs, tiers, dependencies, direction)
      ──orchestrator──▶ builder (+ reviewer for M/H) per issue, up to 3 in parallel
      ──test plan────▶ reviewer posts TEST PLAN, builder agrees, tests first
-     ──build────────▶ self-grill, milestones, diff self-review, melon check
+     ──build────────▶ design settled, milestones, diff self-review, melon check
      ──gate─────────▶ melon gate (mechanics) + verdict (M/H) + CI once (M/H)
      ──merge────────▶ melon merge: squash, daily log with the measured ledger
 ```
@@ -39,7 +39,7 @@ idea ──melon-concept──▶ spec in a work item + sliced issues (briefs, t
 ## Design comes first, and is the cheapest place to spend
 Most expensive rework comes from a design question that nobody settled before a builder started. `melon-concept` runs before any builder:
 - **With the user:** a grilling loop. One question at a time, each with a recommended answer; facts come from the code, decisions come from the user.
-- **Autonomously:** the orchestrator self-grills, answers from the code and the reasoning order, and labels consequential answers `owner-review`.
+- **Autonomously:** the orchestrator asks itself the design questions, answers from the code and the reasoning order, and labels consequential answers `owner-review`.
 
 It grounds the design in the code on `main` (never memory), pins the domain language (glossary, edge-case scenarios), writes one spec at the right level of detail (specific for data, state and computation; directional for UI), designs related issues together, and slices the work into complete user-visible issues, each with a brief.
 
@@ -77,7 +77,7 @@ Every role evaluates a change with the same five questions: **Idea** (the main i
 
 They're asked **where each role decides**, not filled in afterwards, because an answer written after the code tends to justify it:
 - **The builder** asks them while choosing. A System item or a new pattern is a checkpoint before code, and the PR's Impact section records the answers.
-- **The reviewer** predicts the system effect in its test plan, then writes its own System line from the diff *before* reading the PR's. A system change nobody named is blocking, with the diff as proof. A pattern blocks only against a quoted line of the design intent.
+- **The reviewer** predicts the system effect in its test plan, then writes its own System line from the diff *before* reading the PR's. A system change nobody named goes to the orchestrator as a skipped checkpoint; a pattern blocks only against a quoted line of the design intent. What may block is one list, in the review playbook.
 - **The orchestrator** puts System and Long term into each brief at design time, compares open PRs' System lines (`melon status` prints them) to catch collisions hotspots can't see, and adds patterns accepted at merge to the agent map's **Design intent**, so the intent stays current with the code.
 
 `melon gate` requires the answers by tier: Idea and System for S, all four for M and H.
@@ -95,9 +95,9 @@ They're asked **where each role decides**, not filled in afterwards, because an 
 1. **Test plan.** The reviewer reads the issue and the code it touches **on its own**, and posts a `TEST PLAN` comment on the issue: the cases that must pass, each with its kind of test (unit, property-based, UI assertion, golden). For H it first verifies the brief's claims against the code, citing `file:line`, and computes golden values by hand.
 2. **Agreement.** The builder posts `PLAN AGREED`, or lists only where it reads the issue differently. One exchange settles most differences; the orchestrator settles the rest by posting `PLAN AGREED (settled by orchestrator)`.
 
-   **Nobody waits inside a turn.** A background agent can't see a new comment until it's woken, and polling `gh` costs a call each time. So each agent ends its turn naming what it waits for (`READY FOR PLAN #n`, `TEST PLAN POSTED #n`), and the orchestrator relays by resuming it. Builder and reviewer still start together: the builder does its no-code steps (understand, branch, draft PR, self-grill) while the reviewer writes the plan.
+   **Nobody waits inside a turn.** A background agent can't see a new comment until it's woken, and polling `gh` costs a call each time. So each agent ends its turn naming what it waits for (`READY FOR PLAN #n`, `TEST PLAN POSTED #n`), and the orchestrator relays by resuming it. Builder and reviewer still start together: the builder does its no-code steps (understand, branch, draft PR, settle the design) while the reviewer writes the plan.
 3. **Build.**
-   - The builder self-grills the design and records each decision with its basis.
+   - The builder settles the design before code, asking the change questions, and records each decision with its basis.
    - It checkpoints the hard-to-reverse choices the brief didn't settle (schema, shared contracts, glossary terms, reversing a decision).
    - It writes the agreed tests first, builds milestone by milestone, running only the tests it's working on between milestones, and reads its own diff against the issue before the full checks.
 4. **Verdict.** `REVIEW VERDICT: APPROVE @ <sha>` or `CHANGES @ <sha>`. The reviewer:
@@ -105,7 +105,7 @@ They're asked **where each role decides**, not filled in afterwards, because an 
    - reads the diff for what tests can't express;
    - walks UI changes as each persona.
 
-   **A blocking finding needs proof:** a failing test or run, or a line of a spec or ground rule the change breaks.
+   **A blocking finding needs proof,** from one list in the review playbook ("What blocks"): a failing run, a plan case missing, a quoted rule broken, a false Impact claim, or an unproven H safety fact.
 5. **At most two fix rounds.** After that the orchestrator decides and labels the decision `owner-review`.
 
 The agent that judges a change never wrote it, and it committed to its criteria before seeing the code.
@@ -140,8 +140,8 @@ The codebase changes constantly, so docs that record *how it got here* go stale 
 
 | Record | Holds | Edited by |
 |---|---|---|
-| **work item** | one issue: brief, tier, `Depends on:`, the design discussion and spec | orchestrator, `melon-concept` |
-| **decision log** | **open** decisions for unfinished work, each with where it will graduate | orchestrator only |
+| **work item** | one issue: brief, tier, `Depends on:`, the design discussion and spec | orchestrator, `melon-concept`; a builder adds only a `Caused by:` line to a bug |
+| **decision log** | **open** decisions for unfinished work, each with where it will graduate | orchestrator, and `melon-concept` while designing |
 | **owner list** | Needs you / Review later / Coming up / Done | orchestrator only |
 | **direction** | what's next and why (the body); orchestrator hand-offs (comments) | orchestrator; the owner freely |
 | **daily log** | one line per merge, with the measured ledger | `melon merge` |
@@ -151,7 +151,7 @@ The codebase changes constantly, so docs that record *how it got here* go stale 
 2. a ground rule or a line in a reference doc;
 3. or nowhere, if the code already makes it obvious.
 
-Then its entry leaves the log. The builder names each graduation in the PR (`D3 → src/foo.test.ts:42`). **The mechanics are scripted, because they're orchestrator bookkeeping that slips late in a long session:**
+Then its entry leaves the log. The builder names each graduation in the PR (`D3 → src/foo.test.ts › "rejects negative amounts"`, or `path:line`). **The mechanics are scripted, because they're orchestrator bookkeeping that slips late in a long session:**
 - `melon gate` fails a PR that closes a work item while an open decision-log entry for it has no `D<n> →` line, or when a graduation names a file or line that isn't in the PR head.
 - `melon merge` removes the graduated entries from the log.
 
@@ -204,17 +204,18 @@ When agents repeat a mistake, fix it at the highest level that works, in this or
 
 Each check is named after the rule it enforces, so the rule's words find it. The checks are the record; prose a check makes redundant gets deleted.
 
-## What we took, and what we skipped
+## What we adapted, and what we skipped
 
-| Taken | Adapted | Skipped (too costly for us) |
-|---|---|---|
-| playbooks by task type (pstack) | verification → tests only, no screenshot or video | verifier swarms per PR |
-| a done check in every brief (pstack) | review panels → one reviewer, for M and H only; rigor scales by tier, not by model | arena / competing prototypes by default |
-| "block only on a problem you can show" (pstack) | benchmark checklist → the perf playbook | multi-model panels by default (`interrogate` exists, on request: ≤3 adversaries, run-proven findings only) |
-| the brief is the whole bar (pstack `worker.md`) | blast radius → H reviewers prove the one fact a change is safe because of | |
-| | verification skill → `melon-verify`: text evidence, parameterised for parallel builders, journeys promoted to tests | |
-| encode lessons as checks (pstack `/correct`) | decision log → open decisions only, graduating into tests | an hourly root loop probing agents |
-| pause safely / session pickup (pstack) | babysit → `melon status` + `melon gate` (scripts, not an agent) | formal verification |
-| grilling, the human-in-the-loop design interview (Matt Pocock) | deep modules and seams (Matt Pocock) → three principles | a cloud VM per agent |
-| | the spec's level of detail → one rule in `melon-concept` | generic design-craft skills (spec writing, domain modeling, module design) |
-| the principles index (pstack) | | |
+| Adapted for a budget | Skipped (too costly for us) |
+|---|---|
+| verification → tests only, no screenshot or video | verifier swarms per PR |
+| review panels → one reviewer, for M and H only; rigor scales by tier, not by model | arena / competing prototypes by default |
+| adversarial review → `interrogate`, on request only: ≤3 adversaries, run-proven findings only | multi-model panels by default |
+| blast radius → H reviewers prove the one fact a change is safe because of | an hourly root loop probing agents |
+| app verification → `melon-verify`: text evidence, parameterised for parallel builders, journeys promoted to tests | formal verification |
+| benchmark checklist → the perf playbook | a cloud VM per agent |
+| decision log → open decisions only, graduating into tests | generic design-craft skills (spec writing, domain modeling, module design) |
+| babysitting PRs → `melon status` + `melon gate` (scripts, not an agent) | |
+| deep modules and seams → three principles; the spec's level of detail → one rule in `melon-concept` | |
+
+Sources are credited in [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md).
