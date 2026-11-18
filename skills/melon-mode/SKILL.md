@@ -16,8 +16,8 @@ The repo's `CLAUDE.md` and ground rules win over anything here. The scripted hal
   Design work before any issue exists uses the `melon-concept` skill.
 - **Tier** is the issue's `tier:s|m|h` label, set by the orchestrator. The change can only raise it (`melon gate --fix`), and only the orchestrator lowers it.
   - **S:** small changes (no M/H path, no held hotspot, ≤ `sMaxChurn` lines of code). No reviewer agent and no PR CI; `melon check --record` is the evidence.
-  - **M:** the default. Test plan, a cheaper-model review, CI once.
-  - **H:** only where a break would be systemic and hard to undo (formula code, stored format, auth). Strongest-model review of the focus files (`melon focus`), golden tests, `owner-review` for rule changes.
+  - **M:** the default. Test plan agreed before code, one review pass, CI once.
+  - **H:** only where a break would be systemic and hard to undo (formula code, stored format, auth). As M, plus a design check before building, an in-depth review of the focus files (`melon focus`), golden tests, and `owner-review` for rule changes.
 
 ## 2. Pick the playbook
 Read only the playbook you need:
@@ -80,9 +80,9 @@ These are opinions, not a craft manual: each corrects a default that costs this 
 1. **Smallest change that solves it.** No speculative options, fields or layers. *(Counters building for imagined futures.)*
 2. **Fix root causes, every occurrence.** A guard is a fix only when the state it catches is legitimate. *(Counters patching the symptom.)*
 3. **Prove it with a test** that fails without the change. *(Counters "it compiles" and "looks right".)*
-4. **Test at the interface, and delete the tests it makes redundant.** *(Counters piling up tests on internals.)*
+4. **Test at the interface.** Delete tests on internals that interface tests replace, but never a test a decision graduated into, or one the agreed test plan requires. *(Counters piling up tests on internals.)*
 5. **Prefer deep modules:** a small interface with a lot behind it, so an agent can understand a capability from one interface. *(Counters shallow wrappers, which make every task read more files.)*
-6. **No seam without a second adapter.** One implementation behind an interface is indirection, not flexibility. *(Counters abstracting "for later".)*
+6. **No seam without a second adapter;** a test double counts as one. One implementation and no test that swaps it is indirection, not flexibility. *(Counters abstracting "for later".)*
 7. **Migrate callers, then delete the old path.** No compatibility shims within one repo. *(Counters keeping both.)*
 8. **Attack the premise.** After two failed fixes that share a premise, test the premise. *(Counters fix loops.)*
 9. **Decide reversible calls; ask only for owner-only actions** (money, accounts and keys, legal, commercial use, new user data). *(Counters asking.)*

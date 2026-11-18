@@ -9,8 +9,8 @@ export const help = `melon labels [--apply]
 export function labelSet(config) {
   return [
     ['tier:s', '0e8a16', 'Small/mechanical: scripted gate, no reviewer, no PR CI'],
-    ['tier:m', 'fbca04', 'Normal: test plan + cheaper-model review + CI once'],
-    ['tier:h', 'b60205', 'Risky (numbers, stored formats, auth, ingestion): full review'],
+    ['tier:m', 'fbca04', 'Default: test plan before code, one review pass, CI once'],
+    ['tier:h', 'b60205', 'Systemic risk: design check, focus-file review, golden tests'],
     ['status:ready', 'c5def5', 'Brief written; can start'],
     ['status:building', '1d76db', 'A builder is on it'],
     ['status:blocked', '5319e7', 'Waiting on another issue or an outside source'],

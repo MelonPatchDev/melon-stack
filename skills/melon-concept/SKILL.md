@@ -11,7 +11,7 @@ The repo's `CLAUDE.md` wins over anything here. Design lives in **records**, not
 
 ## Mode
 - **With the user:** use `grilling`. Facts come from the code, decisions from the user.
-- **Autonomous** (expanding an outline, or the user said "decide and flag"): settle each question yourself using the reasoning order in melon-mode, and label every consequential or hard-to-reverse answer `owner-review`, so the user can overrule it later without blocking now.
+- **Autonomous** (expanding an outline, or the user said "decide and flag"): settle each question yourself using the reasoning order in melon-mode, and label every consequential or hard-to-reverse answer `owner-review`, so the user can overrule it later without blocking now. No one is pushing back, so before you finish, look for what the outline didn't mention: the variants of each case, the constraints it assumed, every state transition, and what happens when data is missing or unknown.
 
 ## What the design must get right
 - **Start from the code on `main`,** never from memory or an old outline. Use an Explore subagent if the idea spans packages.

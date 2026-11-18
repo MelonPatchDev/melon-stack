@@ -6,7 +6,7 @@ Agent teams are powerful, but every agent, every review round and every re-read 
 
 The answer it settles on:
 - **Spend judgment early.** Design questions get settled with you, or by an orchestrator that writes down and flags its decisions, before any builder starts. That's the cheapest place to spend.
-- **Scale process to risk.** A docs fix doesn't get the same review as a migration. Most PRs get a cheaper review; only changes that could break something systemic get the expensive one.
+- **Scale process to risk.** A docs fix doesn't get the same review as a migration. Small changes merge on scripted checks with no reviewer; most PRs get one review pass; only changes that could break something systemic get the deep one.
 - **Turn judgment into tests.** The reviewer writes the test plan *before* the code exists, and the builder writes those tests first. Review then checks a plan instead of re-deriving the code.
 - **Script the mechanics.** Labels, hotspots, migration slots, CI and the daily log are handled by a small CLI, not by agents reasoning about process.
 - **Measure what it costs, and what it lets through.** A ledger reads Claude Code's own session transcripts, so you know what each PR really cost, not what agents estimate. An escape count tracks how often each tier's PRs later needed a fix, so you can tell whether cheaper review is really safe.
@@ -46,8 +46,8 @@ idea ──melon-concept──▶ spec + sliced issues (briefs, tiers, dependenc
 | Tier | When | What it gets |
 |---|---|---|
 | `tier:s` | small: no risky path, no shared hotspot, ≤400 changed lines of code | a scripted gate and recorded local checks. **No reviewer agent, no PR CI**; CI runs on `main` after a batch. |
-| `tier:m` | the default | a test plan agreed with a reviewer on a cheaper model, then CI once |
-| `tier:h` | **only** where a break would be systemic: formula code, the stored format, auth | the strongest model, which checks the design first and reads only the risky files in depth; golden tests |
+| `tier:m` | the default | a test plan agreed with a reviewer before code, one review pass, then CI once |
+| `tier:h` | **only** where a break would be systemic: formula code, the stored format, auth | as M, plus a design check against the code before building, an in-depth read of the risky files (`melon focus`), and hand-computed golden tests |
 
 The orchestrator sets the tier. The CLI only ever raises it, from the paths and size of the change.
 
@@ -114,7 +114,7 @@ Configure it with `melon.config.json` ([reference](docs/config.md), [example](ex
 
 Twelve one-line principles live in [`melon-mode`](skills/melon-mode/SKILL.md#5-principles), adapted from pstack and Matt Pocock. Each names the model default it corrects: smallest change, fix root causes, prove it with a test, prefer deep modules, no seam without a second adapter, the code is the documentation, and so on.
 
-melon-stack is deliberately **opinionated about what an agent can't know** (how agents coordinate, what's failed before, where your preferences differ from the model's defaults) **and silent about craft a capable model already has.** There are no spec-writing or module-design tutorials here; see [docs/design.md](docs/design.md#how-opinionated-to-be).
+melon-stack is deliberately **opinionated about what an agent can't know** (how agents coordinate, what's failed before, where your preferences differ from the model's defaults) **and silent about craft a capable model already has.** There are no spec-writing or module-design tutorials here; see [docs/design.md](docs/design.md#how-opinionated-to-be). If you want craft guidance too, [Matt Pocock's skills](https://github.com/mattpocock/skills) pair well with melon-stack.
 
 ## Why it's built this way
 

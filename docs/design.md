@@ -17,12 +17,13 @@ Every rule here does at least one of three things:
 3. **Move judgment into tests:** a check that runs for free beats a reviewer re-deriving it.
 
 ## How opinionated to be
+
 Current models are good at the craft: designing modules, writing specs, finding edge cases. Instructions that teach craft cost every reader tokens on every call, anchor agents to a checklist instead of the problem in front of them, and go stale as models improve. Instructions that are missing leave parallel agents unable to coordinate. So melon-stack is **opinionated about what an agent can't know, and silent about what it already does well.** An instruction earns its place only if it:
 1. **coordinates agents:** markers, formats, hand-offs, stop points (stated exactly);
 2. **encodes a real failure** from this process (preferably as a check, not prose);
 3. **states a preference that differs from the model's default:** every principle names the default it corrects (over-building, symptom guards, compatibility shims, repo docs about history, waiting inside a turn, asking).
 
-Anything a capable model would do unprompted is deleted. `melon-correct` applies the same test to every new rule, which is also why melon-stack ships no generic spec-writing, domain-modeling or module-design skills: their few real opinions live in `melon-concept` and the principles.
+Anything a capable model would do unprompted is deleted. Whether a cut was right is measured, not assumed: `melon escapes` per tier, and review findings per PR, before and after. Guidance comes back where escapes rise. `melon-correct` applies the same test to every new rule, which is also why melon-stack ships no generic spec-writing, domain-modeling or module-design skills: their few real opinions live in `melon-concept` and the principles.
 
 ## The pipeline
 
@@ -53,13 +54,15 @@ A call resting on none of them is a labelled **taste call**.
 
 ## Tiers: the process scales with the risk
 
+**Tiers set how much process a change gets, not which model runs it.** S has no reviewer, M gets one review pass, and H adds a design check, an in-depth read of the focus files and golden tests. Model choice is left to whoever runs the session.
+
 Every issue and PR carries exactly one tier label.
 
 | Tier | Label | For | Process |
 |---|---|---|---|
 | S | `tier:s` | docs, copy, dependency bumps, small fixes, mechanical cleanups: no M or H path, no held hotspot, at most `sMaxChurn` changed lines of code | builder → `melon check --record` → `melon gate` → merge. **No reviewer agent. No PR CI;** CI runs on `main` after a batch of S merges. |
-| M | `tier:m` | the default: features, UI slices, refactors, ingestion, contracts, rule docs | the builder and reviewer agree a **test plan** → build → review on a cheaper model → CI once → merge |
-| H | `tier:h` | **only where a break would be systemic and hard to undo:** formula code behind the numbers users act on, the stored format, auth | as M, but the strongest-model reviewer checks the design first and reads the **focus files** (`melon focus`) in depth, skimming the rest; golden tests for formulas; `owner-review` for rule changes |
+| M | `tier:m` | the default: features, UI slices, refactors, ingestion, contracts, rule docs | the builder and reviewer agree a **test plan** → build → one review pass → CI once → merge |
+| H | `tier:h` | **only where a break would be systemic and hard to undo:** formula code behind the numbers users act on, the stored format, auth | as M, but the reviewer checks the design against the code first and reads the **focus files** (`melon focus`) in depth, skimming the rest; golden tests for formulas; `owner-review` for rule changes |
 
 - The orchestrator sets the tier when it writes the issue. That judgment is the main signal; the config sets only a floor.
 - **The floor only goes up automatically.** `melon gate` fails a PR labelled below what the change requires (`--fix` raises the label):
@@ -159,7 +162,7 @@ No ADRs, decision files, committed specs, roadmaps or enforcement tables in the 
 
 Transcripts exist only on the machine where a session ran, so run the ledger there. Compare per-PR totals before and after adoption; that decides whether this design works.
 
-**Cost is half the measurement.** S skips review and M uses a cheaper reviewer, so a falling ledger could just mean defects are getting through. A bug traced to a merged PR carries `Caused by: #<pr>`. `melon merge` tags the fix in the daily log ("fixes an escape from #12 (tier:m)"), and `melon escapes` reports, per tier, how many recently merged PRs later needed a fix. A tier whose escape rate climbs gets a higher floor or a stronger reviewer. Together, the two numbers say whether the savings are real.
+**Cost is half the measurement.** S skips review and M gets a single pass, so a falling ledger could just mean defects are getting through. A bug traced to a merged PR carries `Caused by: #<pr>`. `melon merge` tags the fix in the daily log ("fixes an escape from #12 (tier:m)"), and `melon escapes` reports, per tier, how many recently merged PRs later needed a fix. A tier whose escape rate climbs gets a higher floor or more review. Together, the two numbers say whether the savings are real.
 
 ## Parallelism and hotspots
 - Up to 3 builders run on parallel work. That's the main payoff of agents.
@@ -196,7 +199,7 @@ Each check is named after the rule it enforces, so the rule's words find it. The
 | Taken | Adapted | Skipped (too costly for us) |
 |---|---|---|
 | playbooks by task type (pstack) | verification → tests only, no screenshot or video | verifier swarms per PR |
-| a done check in every brief (pstack) | different-model review → H only, one pass | arena / competing prototypes by default |
+| a done check in every brief (pstack) | review panels → one reviewer, for M and H only; rigor scales by tier, not by model | arena / competing prototypes by default |
 | "block only on a problem you can show" (pstack) | benchmark checklist → the perf playbook | multi-model panels |
 | encode lessons as checks (pstack `/correct`) | decision log → open decisions only, graduating into tests | an hourly root loop probing agents |
 | pause safely / session pickup (pstack) | babysit → `melon status` + `melon gate` (scripts, not an agent) | formal verification |

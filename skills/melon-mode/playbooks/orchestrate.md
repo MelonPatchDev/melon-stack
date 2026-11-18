@@ -35,7 +35,6 @@
 A **reviewer (M/H)** is launched at the same time:
 - read-only, no worktree, reads through `gh` and `git`, own scratch folder;
 - "Review #<n> (tier:<t>). Phase 1: post the TEST PLAN on the issue now. Phase 2 starts when I send the PR number."
-- **Model by tier:** M gets a cheaper model. H gets the strongest, but the reviewer reads only the focus files in depth (`melon focus`).
 
 Then set the issue to `status:building`.
 

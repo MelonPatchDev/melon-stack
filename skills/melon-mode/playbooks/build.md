@@ -7,7 +7,7 @@
    - Branch `<issue>-<slug>` from the latest `main`.
    - **M/H:** open a **draft** PR at the first push. **S:** open it **ready**; CI only runs on M/H.
    - Fill the PR template.
-3. **Settle the design before code.** Record each decision in the PR's Decisions as you make it: one line with its basis from the reasoning order (melon-mode §3), and the rejected alternative when it's hard to reverse.
+3. **Settle the design before code.** Use the glossary's terms, and treat any new or changed term as a checkpoint (step 5). Record each decision in the PR's Decisions as you make it: one line with its basis from the reasoning order (melon-mode §3), and the rejected alternative when it's hard to reverse.
 4. **M/H: agree the tests before writing code.**
    - **Don't wait for the plan inside your turn,** and never poll `gh` for it. If the orchestrator's prompt doesn't already point you to a posted `TEST PLAN`, end your turn here with one line: `READY FOR PLAN #<n>`. The orchestrator wakes you when it's posted.
    - Read the plan, then reply on the issue: `PLAN AGREED`, or start with `PLAN DIFFERS` and list only the points where you read the issue differently, each with its reason.
