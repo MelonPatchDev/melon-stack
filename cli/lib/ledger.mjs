@@ -50,6 +50,7 @@ export const inputEquivalent = (s) =>
 
 const ROLES = [
   ['builder', /\b(builder|build(?:s|ing)?|fix(?:es|ing)?|implement)/i],
+  ['interrogate', /\binterrogat/i],
   ['reviewer', /\b(reviewer|review(?:s|ing)?|verdict|test plan)\b/i],
   ['audit', /\baudit/i],
   ['design', /\bdesign\b/i],

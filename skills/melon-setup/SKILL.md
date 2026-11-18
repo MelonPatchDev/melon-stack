@@ -55,3 +55,4 @@ Adoption changes how every agent in the repo works, so do it as one PR, on a bra
    - **two worktrees at once:** run `melon check --full` in two worktrees side by side, each with its own ports and database from the environment, and confirm worktrees and local settings are git-ignored. Parallel builders depend on this;
    - `melon status`, and `melon gate <an open PR>` (read-only without `--fix`);
    - put the output summary in the PR, and post the first hand-off on the direction record.
+10. **Offer `melon-verify`** when users drive the repo through a UI, a CLI or a service. It generates the `verify-<app>` skill that builders use to prove flow acceptance criteria and reviewers use to reproduce. Run it as its own S-tier work item after this PR merges, not inside it.

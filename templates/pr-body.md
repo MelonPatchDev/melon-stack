@@ -2,7 +2,7 @@ Closes #
 
 **Plan** (from the brief, 3 lines): <!-- goal · approach · deliberately out of scope -->
 
-**State:** <!-- done / next (with the first command to run) / blocked on; update whenever you stop -->
+**State:** <!-- done / next (with the first command to run) / tried and didn't hold (approach, why it failed, evidence) / blocked on; update whenever you stop -->
 
 **Data:** <!-- where real data, caches or DB volumes for this work live (outside the worktree), or "none" -->
 

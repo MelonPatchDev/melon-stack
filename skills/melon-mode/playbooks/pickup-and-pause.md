@@ -6,6 +6,7 @@
 3. Update the PR's **State** block so a stranger can continue:
    - done: the plan steps completed, with commit SHAs;
    - next: the exact next step **and the command to run first**;
+   - tried and didn't hold: each approach abandoned or reverted, why, and the evidence, so the next agent doesn't retry it;
    - blocked on: anything waiting, with links;
    - `Data:` where any real data, DB or volume lives.
 4. Final message: ≤5 lines, pointing at the PR.

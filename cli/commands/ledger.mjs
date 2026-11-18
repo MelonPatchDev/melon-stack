@@ -37,7 +37,7 @@ export function ledgerFor(number, config, projectsDir) {
 }
 
 export function ledgerLine({ byRole, rounds, findings }) {
-  const order = ['builder', 'reviewer', 'design', 'audit', 'other', 'session'];
+  const order = ['builder', 'reviewer', 'interrogate', 'design', 'audit', 'other', 'session'];
   const parts = [...byRole.keys()]
     .sort((a, b) => order.indexOf(a) - order.indexOf(b))
     .map((role) => {

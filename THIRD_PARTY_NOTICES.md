@@ -36,7 +36,7 @@ SOFTWARE.
 
 Source: https://github.com/cursor/plugins/tree/main/pstack
 
-Ideas and structure adapted in: the `melon-mode` playbooks and principles index, `skills/melon-correct`, the perf playbook's benchmark checklist, and the pause/pickup playbook. No files are copied verbatim.
+Ideas and structure adapted in: the `melon-mode` playbooks and principles index, `skills/melon-correct`, the perf playbook's benchmark checklist, the pause/pickup playbook, the review playbook's safety-proof ladder (from `blast-radius`), and the agents' "the brief is the whole bar" rule (from `worker.md`). Adapted more closely, rewritten for Claude Code and melon-stack's records: `skills/interrogate`, `skills/sharpen`, `skills/teach`, `skills/reflect`, `skills/automate-me`, `skills/why`, and `skills/melon-verify` (from `create-verification-skill` and `maintain-verification-skill`). No files are copied whole.
 
 ```
 MIT License

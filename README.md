@@ -64,6 +64,13 @@ The orchestrator sets the tier. The CLI only ever raises it, from the paths and 
 | [`melon-audit`](skills/melon-audit/SKILL.md) | a whole-repo audit, where a script picks the files and one model pass judges them |
 | [`melon-correct`](skills/melon-correct/SKILL.md) | agents keep making the same mistake; turn it into a lint, gate rule or test |
 | [`simplify-single`](skills/simplify-single/SKILL.md) | a cleanup pass over a diff with at most one agent |
+| [`interrogate`](skills/interrogate/SKILL.md) | a change or design needs adversaries, and only findings proven by a run count. Expensive: on request, or when an H fact stays unproven |
+| [`melon-verify`](skills/melon-verify/SKILL.md) | the repo needs a scripted way to launch and drive the real app (generates a `verify-<app>` skill and feature map), or that skill needs a maintain pass |
+| [`why`](skills/why/SKILL.md) | you want the reasoning behind code or a test, from the PRs and issues that argued it |
+| [`teach`](skills/teach/SKILL.md) | you want a subsystem or change explained until it clicks |
+| [`sharpen`](skills/sharpen/SKILL.md) | a task should be deeper, not bigger, before anyone starts it |
+| [`reflect`](skills/reflect/SKILL.md) | a session taught something; route each lesson to a skill, `CLAUDE.md`, or a check |
+| [`automate-me`](skills/automate-me/SKILL.md) | you want your working style captured as a personal `-mode` skill |
 | [`melon-setup`](skills/melon-setup/SKILL.md) | adopting melon-stack in a repo |
 
 </details>
@@ -112,7 +119,7 @@ Configure it with `melon.config.json` ([reference](docs/config.md), [example](ex
 
 ## Principles
 
-Twelve one-line principles live in [`melon-mode`](skills/melon-mode/SKILL.md#5-principles), adapted from pstack and Matt Pocock. Each names the model default it corrects: smallest change, fix root causes, prove it with a test, prefer deep modules, no seam without a second adapter, the code is the documentation, and so on.
+Fourteen one-line principles live in [`melon-mode`](skills/melon-mode/SKILL.md#5-principles), adapted from pstack and Matt Pocock. Each names the model default it corrects: smallest change, fix root causes, prove it with a test, prefer deep modules, no seam without a second adapter, the code is the documentation, build the lever, explain the number, and so on.
 
 melon-stack is deliberately **opinionated about what an agent can't know** (how agents coordinate, what's failed before, where your preferences differ from the model's defaults) **and silent about craft a capable model already has.** There are no spec-writing or module-design tutorials here; see [docs/design.md](docs/design.md#how-opinionated-to-be). If you want craft guidance too, [Matt Pocock's skills](https://github.com/mattpocock/skills) pair well with melon-stack.
 

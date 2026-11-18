@@ -210,7 +210,9 @@ Each check is named after the rule it enforces, so the rule's words find it. The
 |---|---|---|
 | playbooks by task type (pstack) | verification → tests only, no screenshot or video | verifier swarms per PR |
 | a done check in every brief (pstack) | review panels → one reviewer, for M and H only; rigor scales by tier, not by model | arena / competing prototypes by default |
-| "block only on a problem you can show" (pstack) | benchmark checklist → the perf playbook | multi-model panels |
+| "block only on a problem you can show" (pstack) | benchmark checklist → the perf playbook | multi-model panels by default (`interrogate` exists, on request: ≤3 adversaries, run-proven findings only) |
+| the brief is the whole bar (pstack `worker.md`) | blast radius → H reviewers prove the one fact a change is safe because of | |
+| | verification skill → `melon-verify`: text evidence, parameterised for parallel builders, journeys promoted to tests | |
 | encode lessons as checks (pstack `/correct`) | decision log → open decisions only, graduating into tests | an hourly root loop probing agents |
 | pause safely / session pickup (pstack) | babysit → `melon status` + `melon gate` (scripts, not an agent) | formal verification |
 | grilling, the human-in-the-loop design interview (Matt Pocock) | deep modules and seams (Matt Pocock) → three principles | a cloud VM per agent |

@@ -37,7 +37,8 @@ Read only the playbook you need:
 
 Other skills:
 - design: `melon-concept` (idea → spec → issues), `grilling` (with the user in the loop);
-- quality: `melon-audit`, `melon-correct`, `simplify-single`;
+- quality: `melon-audit`, `melon-correct`, `simplify-single`, `interrogate` (expensive; see the review playbook), `melon-verify` (drive the real app);
+- understanding: `why` (the reasoning behind code, from its PRs and issues);
 - adoption: `melon-setup`.
 
 **Templates** named in the playbooks (`templates/<name>.md`) are in `${CLAUDE_PLUGIN_ROOT}/templates/`: brief, test-plan, review-verdict, pr-body, handoff, direction, decision-log, owner-list, agent-map.
@@ -92,9 +93,9 @@ Everything you read is paid for again on every later call.
 ## 5. Principles
 These are opinions, not a craft manual: each corrects a default that costs this process tokens or rots the codebase. You know how to engineer; apply these where your default differs.
 1. **Smallest change that solves it.** No speculative options, fields or layers. *(Counters building for imagined futures.)*
-2. **Fix root causes, every occurrence.** A guard is a fix only when the state it catches is legitimate. *(Counters patching the symptom.)*
+2. **Fix root causes, every occurrence.** A guard is a fix only when the state it catches is legitimate. If finding the cause took a deep dig, propose the cheap always-on signal (an assertion, a log line, a check) that would have shown it at first look. *(Counters patching the symptom.)*
 3. **Prove it with a test** that fails without the change. *(Counters "it compiles" and "looks right".)*
-4. **Test at the interface.** Delete tests on internals that interface tests replace, but never a test a decision graduated into, or one the agreed test plan requires. *(Counters piling up tests on internals.)*
+4. **Test at the interface.** A good test fails when you break the behaviour and keeps passing when you change only the internals; rewrite or delete one that doesn't. Never delete a test a decision graduated into, or one the agreed test plan requires. *(Counters piling up tests on internals.)*
 5. **Prefer deep modules:** a small interface with a lot behind it, so an agent can understand a capability from one interface. *(Counters shallow wrappers, which make every task read more files.)*
 6. **No seam without a second adapter;** a test double counts as one. One implementation and no test that swaps it is indirection, not flexibility. *(Counters abstracting "for later".)*
 7. **Migrate callers, then delete the old path.** No compatibility shims within one repo. *(Counters keeping both.)*
@@ -103,6 +104,8 @@ These are opinions, not a craft manual: each corrects a default that costs this 
 10. **Unknown is a value.** Never invent data; store unknown and flag it. *(Counters plausible guesses.)*
 11. **The code is the documentation.** No docs about history in the repo; records look forward and decisions graduate into code. *(Counters writing ADRs, specs and summaries into the repo.)*
 12. **Encode lessons in structure.** A recurring mistake becomes a type, lint, gate rule or test, not more prose. *(Counters adding rules to read.)*
+13. **Build the lever.** Beyond a couple of edits, write the codemod, script or generator that does them: prove it on the first unit, then rerun it. The tool is also what the reviewer reruns. *(Counters editing by hand, which costs a turn per edit.)*
+14. **Explain the number.** Before trusting a measurement, name what limits it, rule out that it measured something else (errors, cached or skipped work, noise), and keep the run count and spread with it. *(Counters believing the first number.)*
 
 ## 6. Replies
 - Final messages: ≤10 lines, evidence (command + result, `file:line`), and what's next or blocked.

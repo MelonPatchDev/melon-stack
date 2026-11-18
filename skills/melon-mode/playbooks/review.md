@@ -30,10 +30,18 @@
    - Impact claims true against the code. An overstated or missing UX effect is blocking.
    - **Patterns:** a new pattern that contradicts a line of the design intent you can quote is blocking. Any other pattern question is a note; taste never blocks.
    - **Fragment check:** could this have been part of another open or planned PR? One issue should be one complete slice.
-4. **UI changes: walk it as each persona.** Take each user story, as each persona, through the screens as the code defines them. Report where they'd stall, misread a figure, or find a step heavy.
-5. **Targeted probes only:** run the specific tests you doubt, or a one-off script for a suspected bug. A suspicion without a run is a note, not a blocker.
-6. **Blocking needs proof:** a failing test or run at this head, or a line of a spec or ground rule the change breaks (quote it). Everything else is a non-blocking note or a `found-by-agent` issue.
-7. Post the verdict on the PR (template: `templates/review-verdict.md`). The first line is exactly:
+4. **H: prove the fact it's safe because of.** Most risky-looking changes are safe because of one fact ("this only drops cache entries that are already dead"). Name that fact. Then look where grep stops: the library's source at its pinned version, when things run (teardown, retries, concurrent writers), and what else reads the same bytes (a stored format, a DB column, an API response). Get the fact as far down this ladder as is cheap, and say where it stopped:
+   1. asserted;
+   2. cited at a real `file:line`;
+   3. walked: you traced the failure step by step and it can't happen;
+   4. ran: a script or test against the real code that would fail if you were wrong;
+   5. reproduced in the running app (the repo's `verify-<app>` skill, when it has one).
+
+   An H fact below level 4 is reported as **unproven**, not approved. If it can't reach level 4 cheaply and a break would be systemic, say so in the verdict; the orchestrator may run `interrogate`.
+5. **UI changes: walk it as each persona.** Take each user story, as each persona, through the screens as the code defines them. Report where they'd stall, misread a figure, or find a step heavy.
+6. **Targeted probes only:** run the specific tests you doubt, or a one-off script for a suspected bug. A suspicion without a run is a note, not a blocker.
+7. **Blocking needs proof:** a failing test or run at this head, or a line of a spec or ground rule the change breaks (quote it). Everything else is a non-blocking note or a `found-by-agent` issue.
+8. Post the verdict on the PR (template: `templates/review-verdict.md`). The first line is exactly:
    `REVIEW VERDICT: APPROVE @ <head sha>` or `REVIEW VERDICT: CHANGES @ <head sha>`
    then each T<n> with ✓/✗ and `file:line`, the blocking findings with their proof, and your role tag on the last line. Final reply to the orchestrator: one line per finding.
-8. **Re-check after a fix round:** check only what changed (`git diff <old sha>..<new sha>`) against the findings, then post a new verdict. The latest one counts. Merging `main` in doesn't cost a new verdict; `melon gate` knows that.
+9. **Re-check after a fix round:** check only what changed (`git diff <old sha>..<new sha>`) against the findings, then post a new verdict. The latest one counts. Merging `main` in doesn't cost a new verdict; `melon gate` knows that.

@@ -23,6 +23,7 @@ test('summarize de-duplicates calls by message id and splits cache writes', () =
 
 test('attribute: subagent descriptions, then branch names', () => {
   assert.deepEqual(attribute({ description: 'reviewer #127' }), { issues: [127], role: 'reviewer' });
+  assert.deepEqual(attribute({ description: 'interrogate #127' }), { issues: [127], role: 'interrogate' });
   assert.deepEqual(attribute({ description: 'Build issue 87 redesign' }), { issues: [87], role: 'builder' });
   assert.deepEqual(attribute({ description: 'Cold review of milestone issues' }), { issues: [], role: 'reviewer' });
   assert.deepEqual(attribute({ description: 'Research hosting stack options' }), { issues: [], role: 'other' });

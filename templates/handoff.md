@@ -2,6 +2,7 @@
 - In flight: #PR (tier, state, next step) · …
 - Next to start: #issue, because <why, for which persona>
 - Open decisions: <decision, or "none"> (linked)
+- Tried and didn't hold: <approach, why it failed, link>, or "none"
 - What would change the plan: <signal, and the change it would cause>
 - Waiting on the owner: <item on the owner list, or "none">
 - Decision log: <entries added or graduated this session, or "no change">
