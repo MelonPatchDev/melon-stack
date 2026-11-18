@@ -9,14 +9,14 @@
    `T<n> · <observable behaviour> · <unit | property | golden | UI> · <why: acceptance criterion / rules § / ground rule>`
    - Cover each acceptance criterion, the edge cases where the behaviour needs a decision, and the failure modes: empty, unknown, missing data, unauthorised.
    - **Formula code:** compute golden values for 2–4 small cases with a throwaway script written from the rules doc, never from the code under change, and put the values and the script's path in the plan. Independence comes from the source, not from doing arithmetic in your head.
-   - Name anything you think the issue leaves unclear. The builder answers it in its reply.
+   - Name anything you think the issue leaves unclear. The builder answers it: H in its reply before building, M at hand-back.
    - **Predict the system effect** in one line: the state, contracts and data paths this work should need (melon-mode, the change questions). Phase 2 compares the diff against it.
-4. **End your turn** with one line: `TEST PLAN POSTED #<n>`. Don't wait inside the turn or poll for the builder's reply; the orchestrator wakes you. If the builder replies `PLAN DIFFERS`, the orchestrator brings you its points: answer each in one comment, then end your turn again. Anything still open is the orchestrator's call.
+4. **End your turn** with one line: `TEST PLAN POSTED #<n>`. Don't wait inside the turn or poll for the builder's reply; the orchestrator wakes you. **H:** if the builder replies `PLAN DIFFERS`, the orchestrator brings you its points: answer each in one comment, then end your turn again. Anything still open is the orchestrator's call. **M:** the builder doesn't reply now; a `PLAN DIFFERS` it posts at hand-back is answered in your verdict.
 
 ## What blocks
 This is the only list. The agent files and docs point here. A verdict is `CHANGES` only for a finding with one of these proofs:
 1. **A failing test or run** at this head: the command and its output.
-2. **A plan case missing or weakened:** the `T<n>` line, and the test that doesn't assert it.
+2. **A plan case missing or weakened:** the `T<n>` line, and the test that doesn't assert it. M: a case the builder disputed in `PLAN DIFFERS` isn't missing; give your answer in the verdict, and if you still disagree the orchestrator decides.
 3. **A quoted line the change breaks:** a ground rule, a spec or rules-doc section, an open decision-log entry it reverses without listing it, or (for a new pattern) the agent map's Design intent.
 4. **An Impact claim that's false,** or a UX effect it leaves out: the claim, and the code that contradicts it.
 5. **H only: the safety fact below level 4** (Phase 2, step 4). The fix is a test that proves it.

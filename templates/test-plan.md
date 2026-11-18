@@ -7,7 +7,7 @@ TEST PLAN for #<issue> (tier:<m|h>)
 Golden values (formula code; computed by hand, independently):
 - G1 · <inputs> → <expected value> · <the arithmetic in one line>
 
-Unclear in the issue (builder: answer in your reply):
+Unclear in the issue (builder: answer before building for H, at hand-back for M):
 - <question>, or "none"
 
 [reviewer #<issue>]

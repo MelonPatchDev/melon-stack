@@ -59,9 +59,9 @@ A **reviewer (M/H)** is launched at the same time:
 - "Review #<n> (tier:<t>). Phase 1: post the TEST PLAN on the issue now. Phase 2 starts when I send the PR number."
 
 **Agents never wait inside a turn; you relay.** A background agent can't see a new GitHub comment until someone wakes it, and polling `gh` burns a call each time. So:
-1. **M/H:** launch both at once. The builder does only the no-code steps (understand, branch, draft PR, settle the design) and ends its turn with `READY FOR PLAN`. The reviewer posts `TEST PLAN` and ends its turn.
-2. When both are back, resume the builder (SendMessage): "TEST PLAN is on #<n>; reply PLAN AGREED or PLAN DIFFERS, then build if agreed."
-3. **PLAN DIFFERS:** resume the reviewer with the builder's points for its one answer. Then resume the builder with that answer. If they still disagree, decide from the brief and the spec yourself, and post a comment starting `PLAN AGREED (settled by orchestrator)` so the gate sees an agreed plan.
+1. **M:** launch both at once. The builder builds without waiting for the plan and covers it at hand-back; the reviewer posts `TEST PLAN` and ends its turn. Nothing to relay until hand-back (if the builder gets there first, it ends with `WAITING ON PLAN #<n>`; resume it once the plan is up). A `PLAN DIFFERS` it posts then goes to the reviewer with the PR, and the verdict answers it; anything still open is yours.
+2. **H:** launch both at once. The builder does only the no-code steps (understand, branch, draft PR, settle the design) and ends its turn with `READY FOR PLAN`. The reviewer posts `TEST PLAN` and ends its turn. When both are back, resume the builder (SendMessage): "TEST PLAN is on #<n>; reply PLAN AGREED or PLAN DIFFERS, then build if agreed."
+3. **H, PLAN DIFFERS:** resume the reviewer with the builder's points for its one answer. Then resume the builder with that answer. If they still disagree, decide from the brief and the spec yourself, and post a comment starting `PLAN AGREED (settled by orchestrator)` so the gate sees an agreed plan.
 4. **Verdict:** if the PR comes back within about an hour of the reviewer's last turn, resume the same reviewer with the PR number: its phase-1 reading is still cached. After longer, the cache has expired and resuming pays to rewrite the reviewer's whole context into it, so launch a **fresh** reviewer with the TEST PLAN link and the PR number instead. `melon ledger` shows which was cheaper in practice; adjust the window if it disagrees.
 
 An agent that ends its turn waiting on something names exactly what it's waiting for in its last line, so you know whom to wake.
@@ -81,10 +81,10 @@ An agent that ends its turn waiting on something names exactly what it's waiting
 
 ## 5. Merge
 At hand-back (State "ready for gate"):
-- **M/H:** send the reviewer the PR number for its verdict. At most 2 fix rounds; after that, decide, record the basis and label `owner-review`.
+- **M/H:** send the reviewer the PR number for its verdict. At most **one** fix round for M and two for H; after that, decide, record the basis and label `owner-review`.
   - **Unnamed system change** in a verdict: it's a checkpoint the builder skipped, so decide it now. Accept it (add the reviewer's System line to the PR's Impact and record the decision) or send it back as a fix round.
   - **H, safety fact unproven:** the reviewer first asks for a test that proves it (review playbook, What blocks, rule 5). Only when no test can capture the fact, run the `interrogate` skill on the PR. Its verified findings block like any proven finding; when none survive, resume the reviewer to post APPROVE with interrogate's commands as the proof.
-  - **Tier raised after the code exists** (`melon gate --fix` moved S to M or H): launch a reviewer now. It writes its TEST PLAN from the issue **before** reading the diff, so the plan stays independent; the builder answers PLAN AGREED or PLAN DIFFERS as usual, adds any missing tests, and the verdict follows. The plan comes late, but it's still written blind.
+  - **Tier raised after the code exists** (`melon gate --fix` moved S to M or H): launch a reviewer now. It writes its TEST PLAN from the issue **before** reading the diff, so the plan stays independent; the builder adds the missing tests (and, for H, answers PLAN AGREED or PLAN DIFFERS first), and the verdict follows. The plan comes late, but it's still written blind.
 - Run `melon gate <pr>`, then `melon merge <pr>`.
   - With no `--ledger`, merge measures the cost from the session transcripts.
   - Exit 3 means CI was started (merge marks a draft ready, or dispatches a run when a ready head has none) or is still running. Run `gh pr checks <pr> --watch` in the background and end your turn; you're woken when it exits. Then run `melon merge <pr>` again.

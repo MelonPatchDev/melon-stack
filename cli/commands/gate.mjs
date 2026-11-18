@@ -32,8 +32,8 @@ export const help = `melon gate <pr> [--fix] [--json]
     named after "›"), hotspot clashes and the migration slot against other open PRs, a clean
     merge with main, and evidence for its tier:
       S: a "MELON CHECK: PASS @ <sha>" comment covering the head (melon check --record)
-      M/H: a TEST PLAN, then PLAN AGREED posted after it, and "REVIEW VERDICT: APPROVE @ <sha>"
-           covering the head
+      M/H: a TEST PLAN and "REVIEW VERDICT: APPROVE @ <sha>" covering the head; H also needs
+           PLAN AGREED posted after the TEST PLAN (an M builder doesn't wait for the plan)
   A recorded sha covers the head when the PR's only commits since are merges (merging main in).
   --fix   raise the tier label to what the paths require
   --json  print the results as JSON`;
@@ -211,7 +211,7 @@ export function evaluate(number, config, { fix = false } = {}) {
     const planned = hasMarker(all, 'TEST PLAN');
     const agreed = planAgreedAfterPlan(all);
     add(planned, 'test plan posted', planned ? '' : 'reviewer posts TEST PLAN on the issue or PR');
-    add(agreed, 'test plan agreed', agreed ? '' : planned ? 'PLAN AGREED (builder, or the orchestrator when it settles) after the TEST PLAN' : 'needs a TEST PLAN first');
+    if (tier === 'h') add(agreed, 'test plan agreed', agreed ? '' : planned ? 'PLAN AGREED (builder, or the orchestrator when it settles) after the TEST PLAN' : 'needs a TEST PLAN first');
     const v = latestVerdict(pr.comments);
     add(
       v?.verdict === 'APPROVE' && covers(v.sha, head, cwd, main),

@@ -11,8 +11,8 @@ The repo's `CLAUDE.md` and ground rules win over anything here. The scripted hal
 - **Role:** the **orchestrator** chooses what starts, writes briefs, assigns tiers and runs `melon merge`, and never reviews code; a **builder** builds one issue or one maintenance batch; a **reviewer** writes the test plan, then the verdict, and never writes the feature; a **designer** turns a request into work items with the user (`melon-concept`) and doesn't start agents. With no orchestrator (one interactive session), you are it: read the orchestrate playbook.
 - **Tier** is the issue's `tier:s|m|h` label, set by the orchestrator. The change can only raise it (`melon gate --fix`), and only the orchestrator lowers it.
   - **S:** small changes (no M/H path, no held hotspot, ≤ `sMaxChurn` lines of code). No reviewer agent and no PR CI; `melon check --record` is the evidence. A short brief and fewer PR sections (Plan, State, Impact).
-  - **M:** the default. Test plan agreed before code, one review pass, CI once.
-  - **H:** only where a break would be systemic and hard to undo (formula code, stored format, auth). As M, plus a design check before building, an in-depth review of the focus files (`melon focus`), golden tests, and `owner-review` for rule changes.
+  - **M:** the default. The reviewer writes the test plan before seeing code, and the builder covers it without waiting for it; one review pass, at most one fix round, CI once.
+  - **H:** only where a break would be systemic and hard to undo (formula code, stored format, auth). As M, but the plan is agreed before code and up to two fix rounds, plus a design check before building, an in-depth review of the focus files (`melon focus`), golden tests, and `owner-review` for rule changes.
 
 ## 2. Pick the playbook
 If your prompt names your playbooks, read those and skip this. Otherwise read only the one you need, from `${CLAUDE_SKILL_DIR}/playbooks/`:
@@ -61,7 +61,7 @@ These are opinions, not a craft manual: each corrects a default that costs this 
 1. **Smallest change that solves it.** No speculative options, fields or layers. *(Counters building for imagined futures.)*
 2. **Fix root causes, every occurrence.** A guard is a fix only when the state it catches is legitimate. If finding the cause took a deep dig, propose the cheap always-on signal (an assertion, a log line, a check) that would have shown it at first look. *(Counters patching the symptom.)*
 3. **Prove it with a test** that fails without the change. *(Counters "it compiles" and "looks right".)*
-4. **Test at the interface.** A good test fails when you break the behaviour and keeps passing when you change only the internals; rewrite or delete one that doesn't. Never delete a test a decision graduated into, or one the agreed test plan requires. *(Counters piling up tests on internals.)*
+4. **Test at the interface.** A good test fails when you break the behaviour and keeps passing when you change only the internals; rewrite or delete one that doesn't. Never delete a test a decision graduated into, or one the test plan requires. *(Counters piling up tests on internals.)*
 5. **Prefer deep modules:** a small interface with a lot behind it, so an agent can understand a capability from one interface. *(Counters shallow wrappers, which make every task read more files.)*
 6. **No seam without a second adapter;** a test double counts as one. One implementation and no test that swaps it is indirection, not flexibility. *(Counters abstracting "for later".)*
 7. **Migrate callers, then delete the old path.** No compatibility shims within one repo. *(Counters keeping both.)*

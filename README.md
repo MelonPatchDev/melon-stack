@@ -48,8 +48,8 @@ idea ──melon-concept──▶ spec + sliced issues (briefs, tiers, dependenc
 | Tier | When | What it gets |
 |---|---|---|
 | `tier:s` | small: no risky path, no shared hotspot, ≤400 changed lines of code | a scripted gate and recorded local checks. **No reviewer agent, no PR CI**; CI runs on `main` after a batch. |
-| `tier:m` | the default | a test plan agreed with a reviewer before code, one review pass, then CI once |
-| `tier:h` | **only** where a break would be systemic: formula code, the stored format, auth | as M, plus a design check against the code before building, an in-depth read of the risky files (`melon focus`), and hand-computed golden tests |
+| `tier:m` | the default | a reviewer writes the test plan before seeing code (the builder doesn't wait for it), one review pass, at most one fix round, then CI once |
+| `tier:h` | **only** where a break would be systemic: formula code, the stored format, auth | as M, but the test plan is agreed before code and up to two fix rounds, plus a design check against the code before building, an in-depth read of the risky files (`melon focus`), and hand-computed golden tests |
 
 The orchestrator sets the tier. The CLI only ever raises it, from the paths and size of the change.
 

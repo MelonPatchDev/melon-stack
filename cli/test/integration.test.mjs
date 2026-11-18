@@ -486,9 +486,10 @@ test('gate: a graduation may name a test, which must exist at the head', () => {
   assert.doesNotMatch(r.out, /D6 →/);
 });
 
-test('gate: PLAN AGREED posted before the TEST PLAN does not count', () => {
+test('gate (H): PLAN AGREED posted before the TEST PLAN does not count', () => {
   const t = setup();
   t.setState((s) => {
+    s.prs[8].labels = ['tier:h'];
     s.issues[108].comments = [
       { body: 'PLAN AGREED\n[builder #108]', createdAt: '1' },
       { body: 'TEST PLAN for #108\n- T1 · it works · unit · AC1', createdAt: '2' },
@@ -602,4 +603,20 @@ test('direction place puts an item in the order, and status follows it', () => {
   r = t.run('direction', 'place', '#107', '--why', 'again');
   assert.equal(r.code, 1);
   assert.match(r.out, /already in the direction order/);
+});
+
+test('gate (M): a TEST PLAN is enough; the builder does not have to agree it', () => {
+  const t = setup();
+  t.setState((s) => {
+    s.issues[108].comments = [{ body: 'TEST PLAN for #108\n- T1 · it works · unit · AC1', createdAt: '1' }];
+  });
+  let r = t.run('gate', '8');
+  assert.match(r.out, /✓ test plan posted/);
+  assert.doesNotMatch(r.out, /test plan agreed/);
+
+  t.setState((s) => {
+    s.issues[108].comments = [];
+  });
+  r = t.run('gate', '8');
+  assert.match(r.out, /✗ test plan posted/);
 });

@@ -53,7 +53,7 @@ Override only what differs, for example `"records": { "ownerList": { "label": "o
 |---|---|---|
 | `MELON CHECK: PASS @ <sha> (<mode>: <checks>)` | `melon check --record` | gate (S tier) |
 | `TEST PLAN` | reviewer, on the issue or PR | gate (M/H) |
-| `PLAN AGREED` | builder | gate (M/H) |
+| `PLAN AGREED` | builder | gate (H) |
 | `REVIEW VERDICT: APPROVE @ <sha>` / `CHANGES @ <sha>` | reviewer, on the PR | gate (M/H); the latest counts |
 
 ## Lines the CLI reads in bodies

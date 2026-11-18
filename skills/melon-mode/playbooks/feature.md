@@ -1,6 +1,6 @@
 # Feature
 
-**One whole user-visible slice, built to the agreed tests.**
+**One whole user-visible slice, built to the test plan.**
 
 - **One issue = one complete PR:** data, API, contract and UI together. Never split by layer.
 - **Tests from the plan:** each agreed case becomes a test. UI behaviour gets assertions on seed data (text, roles, counts, URLs), not pixels.

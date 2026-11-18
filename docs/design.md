@@ -61,7 +61,7 @@ Every issue and PR carries exactly one tier label.
 | Tier | Label | For | Process |
 |---|---|---|---|
 | S | `tier:s` | docs, copy, dependency bumps, small fixes, mechanical cleanups: no M or H path, no held hotspot, at most `sMaxChurn` changed lines of code | builder → `melon check --record` → `melon gate` → merge. **No reviewer agent. No PR CI;** CI runs on `main` after a batch of S merges. |
-| M | `tier:m` | the default: features, UI slices, refactors, ingestion, contracts, rule docs | the builder and reviewer agree a **test plan** → build → one review pass → CI once → merge |
+| M | `tier:m` | the default: features, UI slices, refactors, ingestion, contracts, rule docs | the reviewer writes a **test plan** blind while the builder builds → the builder covers it at hand-back → one review pass, at most one fix round → CI once → merge |
 | H | `tier:h` | **only where a break would be systemic and hard to undo:** formula code behind the numbers users act on, the stored format, auth | as M, but the reviewer checks the design against the code first and reads the **focus files** (`melon focus`) in depth, skimming the rest; golden tests for formulas; `owner-review` for rule changes |
 
 - The orchestrator sets the tier when it writes the issue. That judgment is the main signal; the config sets only a floor.
@@ -94,20 +94,22 @@ They're asked **where each role decides**, not filled in afterwards, because an 
 
 ### The builder and reviewer agree what the task means
 1. **Test plan.** The reviewer reads the issue and the code it touches **on its own**, and posts a `TEST PLAN` comment on the issue: the cases that must pass, each with its kind of test (unit, property-based, UI assertion, golden). For H it first verifies the brief's claims against the code, citing `file:line`, and computes golden values by hand.
-2. **Agreement.** The builder posts `PLAN AGREED`, or lists only where it reads the issue differently. One exchange settles most differences; the orchestrator settles the rest by posting `PLAN AGREED (settled by orchestrator)`.
+2. **Agreement (H only).** The builder posts `PLAN AGREED`, or lists only where it reads the issue differently. One exchange settles most differences; the orchestrator settles the rest by posting `PLAN AGREED (settled by orchestrator)`.
 
-   **Nobody waits inside a turn.** A background agent can't see a new comment until it's woken, and polling `gh` costs a call each time. So each agent ends its turn naming what it waits for (`READY FOR PLAN #n`, `TEST PLAN POSTED #n`), and the orchestrator relays by resuming it. Builder and reviewer still start together: the builder does its no-code steps (understand, branch, draft PR, settle the design) while the reviewer writes the plan.
+   **M skips the agreement round trip.** The builder starts from the acceptance criteria at once, and at hand-back gives each plan case a test or disputes it in one `PLAN DIFFERS` comment, which the verdict answers. The plan still costs the reviewer little (its phase-1 reading is reused for the verdict) and still comes before the reviewer sees code, which is the independence that matters; what M gives up is tests written first *from the plan*. Formula code, where that matters most, is H. The milestone audits are the backstop for what this lets through, and `melon escapes` per tier says whether it does.
+
+   **Nobody waits inside a turn.** A background agent can't see a new comment until it's woken, and polling `gh` costs a call each time. So each agent ends its turn naming what it waits for (`READY FOR PLAN #n`, `TEST PLAN POSTED #n`), and the orchestrator relays by resuming it. Builder and reviewer start together: for H the builder does its no-code steps (understand, branch, draft PR, settle the design) while the reviewer writes the plan; for M it just builds.
 3. **Build.**
    - The builder settles the design before code, asking the change questions, and records each decision with its basis.
    - It checkpoints the hard-to-reverse choices the brief didn't settle (schema, shared contracts, glossary terms, reversing a decision).
-   - It writes the agreed tests first, builds milestone by milestone, running only the tests it's working on between milestones, and reads its own diff against the issue before the full checks.
+   - It writes tests first (the agreed plan's for H, the acceptance criteria's for M), builds milestone by milestone, running only the tests it's working on between milestones, and reads its own diff against the issue before the full checks.
 4. **Verdict.** `REVIEW VERDICT: APPROVE @ <sha>` or `CHANGES @ <sha>`. The reviewer:
    - checks the tests match the plan;
    - reads the diff for what tests can't express;
    - walks UI changes as each persona.
 
    **A blocking finding needs proof,** from one list in the review playbook ("What blocks"): a failing run, a plan case missing, a quoted rule broken, a false Impact claim, or an unproven H safety fact.
-5. **At most two fix rounds.** After that the orchestrator decides and labels the decision `owner-review`.
+5. **At most one fix round for M, two for H.** Each fix comes with a test that fails without it, and the reviewer re-checks only the blocking findings. After that the orchestrator decides and labels the decision `owner-review`. Most M PRs needed one round anyway.
 
 The agent that judges a change never wrote it, and it committed to its criteria before seeing the code.
 
