@@ -15,7 +15,7 @@ The generated skill is read cold, mid-task, by an agent that has never seen the 
 Answer these from the code. Ask the user only what you can't observe.
 - **Surface:** what a user touches: web UI, CLI or TUI, API, desktop, library. Pick the primary one and note the rest.
 - **Run:** the repo's own dev command (package scripts, Makefile, README). Ports, env vars, seed data, auth.
-- **Drive:** existing harnesses first (Playwright or Cypress specs, PTY helpers, curl-able endpoints, a debug port). Only then a generic recipe: Playwright or CDP for web, tmux or a PTY for CLI and TUI, HTTP for services.
+- **Drive:** the repo's existing harnesses first (e2e specs, PTY helpers, a debug port); a generic recipe only when there are none.
 - **Observe:** text evidence: ARIA snapshots, response bodies, stdout, stderr and exit codes, DB rows, logs.
 - **Isolate:** melon-stack runs up to three builders at once, each in its own worktree with its own ports and DB name. Launch must take those as parameters. If two instances can't run side by side, say so in the skill: refusing to drive a shared instance beats corrupting someone's run.
 
@@ -25,10 +25,9 @@ If the checkout doesn't build or start, fix that first or report exactly why. A 
 Write `.claude/skills/verify-<app>/SKILL.md`. Its frontmatter `description` names the app, the surface and when to use it. Sections, each from what step 1 found, with no placeholders:
 - **Launch:** the exact command, parameterised by port and data dir or DB name, from an empty data dir through migrations and seed data. How to tell it's *usable*, not just answering. Teardown. For a short-lived CLI: build once, then each drive in its own PTY session.
 - **Doctor:** one read-only check that this instance is worth driving: process up, right build, port owned by this run, auth valid. Run it first, and again after anything surprising.
-- **Drive:** the harness recipe with this repo's real selectors and commands. Prefer stable handles (ARIA roles and names, data attributes, prompt strings, routes) over coordinates and tab order.
+- **Drive:** the harness recipe with this repo's real selectors and commands.
 - **Evidence:** what to capture and where (`.melon/verify/<issue>/`, gitignored). Drive the real user path, not internal setters or test-only endpoints. Capture the action and the resulting state. Check side effects (rows written, files, outbound calls) as well as what's visible. Mocks only where a production boundary already isolates the outside system. If the safe path is a dry run, observe what it really skips rather than trusting its name. Screenshots only when an issue asks for them.
 - **Cleanup:** kill what this run started, never by process name. Cleanup removes instances and scratch state, never the evidence.
-- **Helpers:** any script the skill ships is executable, and the skill shows how to call it.
 
 ### 3. Seed the feature map
 Write `.claude/skills/verify-<app>/features/README.md` (baseline preconditions, driving conventions, proof rules, an index, and `Verified at: <sha>`), then one file per user-facing feature, starting with the top 3–5 from routes, commands or menus. Each feature file has a one-paragraph description, then:

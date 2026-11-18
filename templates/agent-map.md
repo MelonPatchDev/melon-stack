@@ -7,6 +7,11 @@
 |---|---|
 | `apps/…` | |
 
+## Personas
+<!-- Who uses the product, one line each: who they are, what they come to do, and what they would never want. Step 2 of the reasoning order, the reviewer's persona walk and every brief's UX effect read this. Delete the section for a repo with no users to speak of (a library, an internal script); agents then skip that step. -->
+- **<persona>:** <who, what they do here> · never wants: <…>
+<!-- Or one line pointing to the repo doc that already describes them. -->
+
 ## Design intent
 <!-- The patterns this codebase wants more of, and the ones it wants less of, one line each with an example file. Reviewers block a change only against a line here, so keep it short and true. The orchestrator adds patterns the review accepted. Where this section is empty, the melon-mode principles apply. -->
 - More of: <pattern> (e.g. `path/to/example.ts`)

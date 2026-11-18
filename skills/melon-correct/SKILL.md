@@ -1,6 +1,6 @@
 ---
 name: melon-correct
-description: Turn a recurring agent mistake into a type, lint, gate rule or test, and delete the prose it replaces. Use after a retro, when a review finding repeats, or when the owner says "agents keep doing X".
+description: Turn a recurring agent mistake into a type, lint, gate rule or test, and delete the prose it replaces, in a melon-stack repo (one with melon.config.json). Use after a retro, when a review finding repeats, or when the owner says "agents keep doing X".
 ---
 
 # melon-correct

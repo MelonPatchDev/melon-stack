@@ -36,7 +36,10 @@ Adoption changes how every agent in the repo works, so do it as one PR, on a bra
    - **drop it:** the code already makes it obvious, and nobody would plausibly reverse it.
 
    Then remove the old list or folder. The reasoning stays in the issues and PRs that argued it. **Exception:** if the repo must keep its decision records (compliance, an outside auditor), leave the folder as a frozen archive, say so in the agent map, and record new decisions only in the decision log.
-5. **The one repo doc: `docs/agent-map.md`** (template in `${CLAUDE_PLUGIN_ROOT}/templates/`), ≤3k tokens: what lives where, the `melon records` table, which reference doc answers what, and the rules agents break most. Read the existing docs once through an Explore subagent; don't paste them. Repo docs describe the code as it is now. Plans, specs, decision logs and roadmaps are records, not files.
+5. **The one repo doc: `docs/agent-map.md`** (template in `${CLAUDE_PLUGIN_ROOT}/templates/`), ≤3k tokens: what lives where, the personas, the `melon records` table, which reference doc answers what, and the rules agents break most. Read the existing docs once through an Explore subagent; don't paste them. Repo docs describe the code as it is now. Plans, specs, decision logs and roadmaps are records, not files.
+   - **Personas:** the reasoning order, briefs and reviews depend on them. Take them from the repo's docs; if there are none, propose 1–3 and ask the user. For a repo with no real users, delete the section.
+   - **Glossary:** point to the repo's glossary in Reference docs if it has one. If not, don't write one now; the first PR that introduces a term creates it.
+   - **Product ground rules** (how numbers render, data handling, fetching) belong in `CLAUDE.md`; `${CLAUDE_PLUGIN_ROOT}/examples/ground-rules.md` shows the kind melon-stack's playbooks leave to the repo.
 6. **Process docs.** Shrink the repo's own process doc to what's specific to that repo, and point to melon-stack's design and playbooks. Update `CLAUDE.md`'s agent working rules to match:
    - the tiers;
    - the test plan in place of any orchestrator onboarding confirmation;

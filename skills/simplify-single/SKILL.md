@@ -45,7 +45,7 @@ more than one agent for this skill.
   may apply the fixes itself if it was briefed to.
 - Skip a finding whose fix would change intended behaviour, needs changes well outside the reviewed diff, or is a
   false positive. Note the skip rather than arguing with it.
-- Never weaken a line marked `INVARIANT:`.
+- Never weaken an invariant the code states (an assertion, a type, a comment saying it must hold).
 - Re-run the repo's local bar after applying fixes.
 - Finish with a short summary: what was fixed, and what was skipped and why. Or confirm the code was already
   clean.

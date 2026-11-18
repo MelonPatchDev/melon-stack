@@ -19,7 +19,7 @@ Closes #
 
 ## Decisions
 <!-- One line each: the decision, why, what it rests on (or "taste call"); name the rejected alternative if hard to reverse.
-Graduations: for each decision-log entry this PR implements, "D<n> → <where it now lives>". Name a test as `path › "test name"` (survives edits; the gate checks the name exists), else `path:line`, a type, a lint or gate rule, a ground rule, or a reference doc.. -->
+Graduations: for each decision-log entry this PR implements, "D<n> → <where it now lives>". Name a test as `path › "test name"` (survives edits; the gate checks the name exists), else `path:line`, a type, a lint or gate rule, a ground rule, or a reference doc. -->
 
 ## Unconfirmed facts
 <!-- "None" if none -->

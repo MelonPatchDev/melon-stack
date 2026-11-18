@@ -38,7 +38,7 @@ Limits: one repo per orchestrator, GitHub for the records, markers and CI dispat
 ```
 idea ──melon-concept──▶ spec + sliced issues (briefs, tiers, dependencies)
      ──orchestrator──▶ builder (+ reviewer for M/H) per issue, up to 3 in parallel
-     ──test plan────▶ reviewer posts TEST PLAN before code; builder agrees; tests first
+     ──test plan────▶ reviewer posts TEST PLAN blind; H: builder agrees before code
      ──build────────▶ design settled, milestones, diff self-review, melon check
      ──gate─────────▶ melon gate + verdict (M/H) + CI once (M/H)
      ──merge────────▶ melon merge: squash, daily log with the measured ledger
@@ -52,6 +52,11 @@ idea ──melon-concept──▶ spec + sliced issues (briefs, tiers, dependenc
 | `tier:h` | **only** where a break would be systemic: formula code, the stored format, auth | as M, but the test plan is agreed before code and up to two fix rounds, plus a design check against the code before building, an in-depth read of the risky files (`melon focus`), and hand-computed golden tests |
 
 The orchestrator sets the tier. The CLI only ever raises it, from the paths and size of the change.
+
+### What it costs
+There are no per-tier numbers yet. The project melon-stack grew out of spent about 80M input tokens per merged PR before these rules ([design.md](docs/design.md#the-cost-model)); most of that was agents re-reading their own history, which is what tiers, briefs and scripts cut. melon-stack's own instructions are small: about 4–6k tokens per role. To get your numbers, run `melon ledger --since <date>` before and after adopting, and `melon escapes` to check that cheaper review isn't letting defects through.
+
+melon-stack's playbooks carry process only. Your product's rules (how numbers render, how data is handled) go in your `CLAUDE.md`; [examples/ground-rules.md](examples/ground-rules.md) shows the kind.
 
 ## Skills
 

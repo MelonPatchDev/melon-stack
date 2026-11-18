@@ -1,13 +1,13 @@
 ---
 name: melon-concept
-description: Turn an idea into a spec and buildable issues (briefs, tiers, dependencies), with the user or autonomously. Use for "let's design X", "spec out M2", "turn this into issues", "plan the next milestone", or an outline issue with no brief.
+description: Turn an idea into a spec and buildable issues (briefs, tiers, dependencies), with the user or autonomously, in a melon-stack repo (one with melon.config.json). Use for "let's design X", "spec out M2", "turn this into issues", "plan the next milestone", or an outline issue with no brief.
 ---
 
 # melon-concept
 
 **Design is the cheapest place to spend tokens.** A question settled here saves a builder session, a review round and a redesign. The output is a spec and a set of issues the melon-mode orchestrator can launch. You know how to design; this skill only fixes what this process needs from the result.
 
-The repo's `CLAUDE.md` wins over anything here. Design lives in **records**, not the repo (`melon records` says where): the spec in a parent **work item**, settled decisions in the **decision log**, the order in **direction**.
+The repo's `CLAUDE.md` wins over anything here. **Load the `melon-stack:melon-mode` skill first** unless this session already has it (an orchestrator does), and skip its playbook list: the tiers you propose, the bases you give decisions and the System lines you write are read by builders, reviewers and gates that work under its tiers (§1), reasoning order and change questions (§3) and principles (§5). Design lives in **records**, not the repo (`melon records` says where): the spec in a parent **work item**, settled decisions in the **decision log**, the order in **direction**.
 
 ## Mode
 - **With the user** (you're the **designer**): use `grilling`. Facts come from the code, decisions from the user. An orchestrator may be running, so first read `melon status` and the open decision log, and design against the work in flight as well as `main`. You may refine an issue that's still `status:ready`; once it's `status:building`, a change is the orchestrator's checkpoint. Sign comments `[designer]`.

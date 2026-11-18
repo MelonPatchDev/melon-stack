@@ -5,7 +5,7 @@
 ## Solo use, records and skills
 **No orchestrator** (one interactive session, "build #42"): the person is the orchestrator. The session builds and launches a `melon-stack:melon-reviewer` for M/H, relaying between them as this playbook says. The owner may also play reviewer and post `TEST PLAN` or `REVIEW VERDICT` themselves: the gate reads the markers, not who wrote them.
 
-**Records** look forward only; `melon records` says where each lives.
+**Who edits which record:**
 
 | Record | Holds | Edited by |
 |---|---|---|

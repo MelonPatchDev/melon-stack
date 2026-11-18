@@ -17,7 +17,7 @@
    - the change would add something to the system the brief didn't name: a new place for state, a new contract, a new data path, an extension point, a product-specific special case, or a pattern the design intent doesn't have;
    - you need to change anything outside your owned paths.
 
-   Problems you find elsewhere become issues labelled `found-by-agent tier:s area:<x>`, one paragraph each; don't fix them. If `git log`/`git blame` shows a merged PR introduced the problem, add a line `Caused by: #<pr>`. That's how `melon escapes` measures what review let through.
+   Problems you find elsewhere become issues labelled `found-by-agent tier:s area:<x>`, one paragraph each; don't fix them. If `git log`/`git blame` shows a merged PR introduced the problem, add a line `Caused by: #<pr>`.
 6. **Build milestone by milestone.**
    - Tests first: the agreed plan's (H), the acceptance criteria's (M), or the one that proves the fix (S). Docs, copy and config-value changes need no new test: say so in one line under Acceptance criteria.
    - **Between milestones, run only the tests you're working on.** The full suite runs once, at hand-back.

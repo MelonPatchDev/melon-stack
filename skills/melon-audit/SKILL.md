@@ -1,6 +1,6 @@
 ---
 name: melon-audit
-description: Whole-repo audit on a budget - a script flags suspect files, one model pass judges them (state-machines, style-drift, react-composition, privacy, docs-drift). Use every 5 merges, before a deploy, or when the owner asks.
+description: Whole-repo audit on a budget - a script flags suspect files, one model pass judges them (state-machines, style-drift, react-composition, privacy, docs-drift), in a melon-stack repo (one with melon.config.json). Use every 5 merges, before a deploy, or when the owner asks.
 ---
 
 # melon-audit
@@ -17,7 +17,7 @@ description: Whole-repo audit on a budget - a script flags suspect files, one mo
    - `state-machines`: for each confirmed machine, list the states and transitions, and say whether an impossible combination can be reached.
 5. **Output:**
    - Each finding becomes an issue labelled `found-by-agent tier:s area:<x>` (`tier:m` if it needs a contract or a hotspot), one paragraph each.
-   - A **ground-rule break** (privacy, secrets, auth, polite fetching, data traceability) is flagged to the orchestrator as "fix before the next feature merge".
+   - A **ground-rule break** (anything `CLAUDE.md`'s ground rules forbid, and always privacy, secrets and auth) is flagged to the orchestrator as "fix before the next feature merge".
    - Post **one** comment on the **direction** record: the audits run, flags vs findings, the issue links, and any finding that should become a lint (then run `melon-correct` on it).
    - Keep the comment to ≤15 lines.
 
