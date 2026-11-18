@@ -1,13 +1,17 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
+  addDecision,
   decisionEntries,
   dependencies,
+  directionOrder,
   graduations,
   graduationTarget,
   readiness,
   record,
   recordLabels,
+  nextDecisionId,
+  placeInDirection,
   removeEntries,
   resolveRecords,
 } from '../lib/records.mjs';
@@ -92,4 +96,40 @@ test('graduationTarget: a test name after "›" survives line moves', () => {
   assert.deepEqual(graduationTarget('src/money.test.ts › "rejects negative amounts"'), { path: 'src/money.test.ts', line: null, name: 'rejects negative amounts' });
   assert.deepEqual(graduationTarget('`src/money.test.ts` > rejects negative'), { path: 'src/money.test.ts', line: null, name: 'rejects negative' });
   assert.deepEqual(graduationTarget('src/money.test.ts:42'), { path: 'src/money.test.ts', line: 42 });
+});
+
+test('decision ids never repeat, even after entries graduate and leave the log', () => {
+  assert.equal(nextDecisionId(''), 'D1');
+  assert.equal(nextDecisionId('| D3 | a | b | c | d | #1 |\n| D7 | a | b | c | d | #2 |'), 'D8');
+  const { id, body } = addDecision('| D7 | a | b | c | d | #2 |', { decision: 'x', forItems: [5] });
+  assert.equal(id, 'D8');
+  assert.equal(nextDecisionId(removeEntries(body, ['D7', 'D8'])), 'D9', 'the mark outlives the rows');
+});
+
+test('addDecision appends after the table, makes a table when there is none, and keeps cells whole', () => {
+  const log = '# Decision log\n\n| # | Decision | Basis | Argued in | Graduates to | For |\n|---|---|---|---|---|---|\n| D1 | a | b | #3 | t | #4 |\n\nNotes below.';
+  const { body } = addDecision(log, { decision: 'cache a|b\nfor 5 min', basis: 'AC2', argued: '#9', graduates: 'a test', forItems: [4, 6] });
+  assert.match(body, /\| D1 \| a \| b \| #3 \| t \| #4 \|\n\| D2 \| cache a\/b for 5 min \| AC2 \| #9 \| a test \| #4, #6 \|\n\nNotes below\./);
+  assert.deepEqual(decisionEntries(body).map((e) => [e.id, e.for]), [['D1', [4]], ['D2', [4, 6]]]);
+
+  const fresh = addDecision('# Decision log', { decision: 'x', forItems: [1] }).body;
+  assert.match(fresh, /\| # \| Decision .*\n\|---.*\n\| D1 \| x \|  \|  \|  \| #1 \|/);
+});
+
+test('directionOrder: only the order section counts; first mention wins; comments do not count', () => {
+  const body = '## Now: M2\nFor #50\n\n## Why this order\n1. #12: first\n2. #9 after #12\n<!-- #40 is an example -->\n\n## What would change the plan\n- If #45 slips, #9 moves up';
+  assert.deepEqual([...directionOrder(body).keys()], [12, 9]);
+  assert.deepEqual([...directionOrder('1. #12\n- open question on #3').keys()], [12, 3], 'no order section: the whole body');
+});
+
+test('placeInDirection inserts after an item or last, renumbers, and refuses duplicates', () => {
+  const body = '## Why this order\n1. #12: first\n   unlocks the API\n2. #9: then\n\n## Bets\n- x';
+  assert.equal(
+    placeInDirection(body, 30, { after: 12, why: 'users asked | today' }).body,
+    '## Why this order\n1. #12: first\n   unlocks the API\n2. #30: users asked / today\n3. #9: then\n\n## Bets\n- x\n',
+  );
+  assert.match(placeInDirection(body, 30, { why: 'later' }).body, /2\. #9: then\n3\. #30: later\n\n## Bets/);
+  assert.match(placeInDirection(body, 9, { why: 'x' }).error, /already/);
+  assert.match(placeInDirection(body, 30, { after: 77, why: 'x' }).error, /#77 isn't/);
+  assert.equal(placeInDirection('# Direction', 5, { why: 'w' }).body, '# Direction\n\n## Why this order\n1. #5: w\n');
 });

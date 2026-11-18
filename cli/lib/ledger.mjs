@@ -13,10 +13,14 @@ export const WEIGHTS = { input: 1, write5m: 1.25, write1h: 2, read: 0.1 };
 /** Claude Code's project directory name for a path: every "/" and "." becomes "-". */
 export const encodeProjectDir = (path) => path.replace(/[/.]/g, '-');
 
+// Skills a session ran, by Skill tool call or typed slash command ("/melon-stack:melon-concept").
+const SKILL_USE = /"name":"Skill","input":\{"skill":"(?:[\w-]+:)?([\w-]+)"|<command-name>\/(?:[\w-]+:)?([\w-]+)<\/command-name>/g;
+
 export function summarize(text) {
   const seen = new Set();
-  const s = { calls: 0, input: 0, write5m: 0, write1h: 0, read: 0, output: 0, peak: 0, branches: new Set(), models: new Set(), first: null, last: null };
+  const s = { calls: 0, input: 0, write5m: 0, write1h: 0, read: 0, output: 0, peak: 0, branches: new Set(), models: new Set(), skills: new Set(), first: null, last: null };
   for (const line of text.split('\n')) {
+    if (line.includes('Skill') || line.includes('command-name')) for (const m of line.matchAll(SKILL_USE)) s.skills.add(m[1] ?? m[2]);
     if (!line.includes('"usage"')) continue;
     let o;
     try {
@@ -58,12 +62,19 @@ const ROLES = [
 ];
 const roleOf = (description) => ROLES.find(([, re]) => re.test(description))?.[0] ?? null;
 
+/** A top-level session with no issue, by the skills it ran: a designer's, or the orchestrator's. */
+function roleBySkills(skills) {
+  if (skills.some((k) => k === 'melon-concept' || k === 'grilling')) return 'design';
+  if (skills.includes('melon-mode')) return 'orchestrator';
+  return null;
+}
+
 /**
  * Which issues and role a transcript belongs to. Subagents are named by the orchestrator
  * ("builder #127"); a top-level session counts as the builder of the issue its branch starts
  * with ("127-bond-wording").
  */
-export function attribute({ description = '', branches = [] }) {
+export function attribute({ description = '', branches = [], skills = [] }) {
   const issues = new Set([...description.matchAll(/(?:#|\bissue\s+)(\d+)/gi)].map((m) => Number(m[1])));
   let role = roleOf(description);
   if (issues.size === 0) {
@@ -72,6 +83,7 @@ export function attribute({ description = '', branches = [] }) {
       if (n) issues.add(Number(n));
     }
     if (issues.size && !role) role = 'builder';
+    role ??= roleBySkills(skills);
   }
   return { issues: [...issues], role: role ?? (description ? 'other' : 'session') };
 }
@@ -89,7 +101,7 @@ export function collect(repoRoot, projectsDir = join(homedir(), '.claude', 'proj
     for (const entry of readdirSync(base)) {
       if (entry.endsWith('.jsonl')) {
         const s = summarize(readFileSync(join(base, entry), 'utf8'));
-        out.push({ file: join(dir, entry), description: '', ...s, ...attribute({ branches: [...s.branches] }) });
+        out.push({ file: join(dir, entry), description: '', ...s, ...attribute({ branches: [...s.branches], skills: [...s.skills] }) });
       }
       const subDir = join(base, entry, 'subagents');
       if (!existsSync(subDir)) continue;

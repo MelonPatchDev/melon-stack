@@ -8,7 +8,7 @@ description: Shared rules and the playbook router for agent work in a melon-stac
 The repo's `CLAUDE.md` and ground rules win over anything here. The scripted half is the `melon` CLI (`melon <cmd> --help`; most repos expose it as `pnpm melon` or `npm run melon --`). Budget is the constraint: do the useful work with the fewest tokens.
 
 ## 1. Know your role and the tier
-- **Role:** the **orchestrator** chooses what starts, writes briefs, assigns tiers and runs `melon merge`, and never reviews code; a **builder** builds one issue or one maintenance batch; a **reviewer** writes the test plan, then the verdict, and never writes the feature. With no orchestrator (one interactive session), you are it: read the orchestrate playbook.
+- **Role:** the **orchestrator** chooses what starts, writes briefs, assigns tiers and runs `melon merge`, and never reviews code; a **builder** builds one issue or one maintenance batch; a **reviewer** writes the test plan, then the verdict, and never writes the feature; a **designer** turns a request into work items with the user (`melon-concept`) and doesn't start agents. With no orchestrator (one interactive session), you are it: read the orchestrate playbook.
 - **Tier** is the issue's `tier:s|m|h` label, set by the orchestrator. The change can only raise it (`melon gate --fix`), and only the orchestrator lowers it.
   - **S:** small changes (no M/H path, no held hotspot, ≤ `sMaxChurn` lines of code). No reviewer agent and no PR CI; `melon check --record` is the evidence. A short brief and fewer PR sections (Plan, State, Impact).
   - **M:** the default. Test plan agreed before code, one review pass, CI once.
@@ -75,5 +75,5 @@ These are opinions, not a craft manual: each corrects a default that costs this 
 
 ## 6. Replies
 - Final messages: ≤10 lines, evidence (command + result, `file:line`), and what's next or blocked.
-- Comments end with your role tag (`[builder #n]`, `[reviewer #n]`, `[orchestrator]`).
+- Comments end with your role tag (`[builder #n]`, `[reviewer #n]`, `[designer]`, `[orchestrator]`).
 - Say each thing once and link instead of repeating.

@@ -326,10 +326,11 @@ test('status: ready vs waiting on dependencies, unlocks, record issues left out'
   t.setState((s) => {
     s.prs[7].state = 'CLOSED'; // otherwise #107 and #109 count as already in a PR
     s.prs[9].state = 'CLOSED';
+    s.issues[302].body = '1. #109: first';
   });
   const r = t.run('status', '--no-slots');
   assert.equal(r.code, 0, r.out);
-  assert.match(r.out, /## Ready to start \(dependencies closed\) \(1\)\n- #109 Issue 109 \[tier:m\] · unlocks #107/);
+  assert.match(r.out, /## Ready to start \(dependencies closed\), in direction order \(1\)\n- #109 Issue 109 \[tier:m\] · unlocks #107/);
   assert.match(r.out, /## Waiting on dependencies \(1\)\n- #107 Issue 107 \[tier:s\] · waits on #109/);
   assert.doesNotMatch(r.out, /#30[012] /, 'record issues are not work');
 });
@@ -506,4 +507,99 @@ test('gate: owner-review blocks only when gate.ownerReviewBlocks is on', () => {
   const cfg = JSON.parse(readFileSync(join(t.work, 'melon.config.json'), 'utf8'));
   writeFileSync(join(t.work, 'melon.config.json'), JSON.stringify({ ...cfg, gate: { ownerReviewBlocks: true } }));
   assert.match(t.run('gate', '7').out, /✗ no owner-review label/);
+});
+
+test('status orders ready work by the direction record and lists unplaced items apart', () => {
+  const t = setup();
+  t.setState((s) => {
+    s.prs[7].state = 'CLOSED';
+    s.prs[9].state = 'CLOSED';
+    s.issues[107].body = '';
+    s.issues[120] = { ...s.issues[109], number: 120, title: 'Issue 120' };
+    s.issues[121] = { ...s.issues[109], number: 121, title: 'Issue 121' };
+    s.issues[302].body = '## Why this order\n1. #120: first\n2. #109\n<!-- #121 only in a comment -->';
+  });
+  let r = t.run('status', '--no-slots');
+  assert.match(r.out, /in direction order \(2\)\n- #120 Issue 120 .*\n- #109 Issue 109 /);
+  assert.match(r.out, /## Ready, not in direction yet \(place each, or say why it waits\) \(2\)\n- #107 .*\n- #121 /);
+
+  t.setState((s) => {
+    s.issues[302].labels = [];
+  });
+  r = t.run('status', '--no-slots');
+  assert.match(r.out, /direction record not found, so unordered\) \(4\)/);
+});
+
+test('decision add numbers past graduated entries, keeps other rows, and the gate sees it', () => {
+  const t = setup();
+  t.setState((s) => {
+    s.issues[300].body = '| # | Decision | Basis | Argued in | Graduates to | For |\n|---|---|---|---|---|---|\n| D4 | other | AC | #40 | a test | #41 |\n\n<!-- melon:next-decision D6 -->';
+  });
+  let r = t.run('decision', 'add', '--for', '#108', '--text', 'b is a feature', '--basis', 'AC1', '--graduates', 'a test');
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /D6 added to the decision log \(#300\)/);
+  const body = t.state().issues[300].body;
+  assert.match(body, /\| D4 \| other .*\n\| D6 \| b is a feature \| AC1 \|  \| a test \| #108 \|/);
+  assert.match(body, /<!-- melon:next-decision D7 -->/);
+
+  r = t.run('gate', '8');
+  assert.match(r.out, /✗ decisions graduate — D6 open in the decision log \(#300\) for this work/);
+
+  r = t.run('decision', 'add', '--text', 'no work item');
+  assert.equal(r.code, 2);
+});
+
+test('decision add retries when another writer replaces the log, and keeps their row', () => {
+  const t = setup();
+  const head = '| # | Decision | Basis | Argued in | Graduates to | For |\n|---|---|---|---|---|---|\n| D4 | other | AC | #40 | a test | #41 |\n';
+  t.setState((s) => {
+    s.issues[300].body = head;
+    s.raceOnEdit = { 300: `${head}| D5 | theirs | AC | #42 | a test | #43 |\n` };
+  });
+  const r = t.run('decision', 'add', '--for', '#108', '--text', 'mine');
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /D6 added/);
+  const body = t.state().issues[300].body;
+  assert.match(body, /\| D5 \| theirs .*\n\| D6 \| mine /);
+});
+
+test('merge removes graduated decisions from a fresh read and checks they are gone', () => {
+  const t = setup();
+  const log = '| # | Decision | Basis | Argued in | Graduates to | For |\n|---|---|---|---|---|---|\n| D1 | b is a feature | AC1 | #108 | a test | #108 |\n';
+  t.setState((s) => {
+    s.issues[300].body = log;
+    s.prs[8].body = `${s.prs[8].body}\n## Decisions\n- D1 → \`src/b.js:1\`\n`;
+    s.prs[8].isDraft = false;
+    s.prs[8].statusCheckRollup = [{ __typename: 'CheckRun', status: 'COMPLETED', conclusion: 'SUCCESS' }];
+    // Someone adds D2 between merge's read and its write: the first removal is replaced.
+    s.raceOnEdit = { 300: `${log}| D2 | added meanwhile | AC | #50 | a test | #51 |\n` };
+  });
+  const r = t.run('merge', '8', '--ledger', 'x');
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /D1 graduated and removed/);
+  const body = t.state().issues[300].body;
+  assert.doesNotMatch(body, /\| D1 \|/);
+  assert.match(body, /\| D2 \| added meanwhile/);
+});
+
+test('direction place puts an item in the order, and status follows it', () => {
+  const t = setup();
+  t.setState((s) => {
+    s.prs[7].state = 'CLOSED';
+    s.prs[9].state = 'CLOSED';
+    s.issues[107].body = '';
+    s.issues[302].body = '## Why this order\n1. #109: first\n\n## What would change the plan\n- If #107 slips, nothing';
+  });
+  let r = t.run('status', '--no-slots');
+  assert.match(r.out, /## Ready, not in direction yet .*\n- #107 /, 'a mention outside the order section does not place it');
+
+  r = t.run('direction', 'place', '#107', '--after', '#109', '--why', 'users asked');
+  assert.equal(r.code, 0, r.out);
+  assert.match(t.state().issues[302].body, /1\. #109: first\n2\. #107: users asked\n/);
+  r = t.run('status', '--no-slots');
+  assert.match(r.out, /in direction order \(2\)\n- #109 .*\n- #107 /);
+
+  r = t.run('direction', 'place', '#107', '--why', 'again');
+  assert.equal(r.code, 1);
+  assert.match(r.out, /already in the direction order/);
 });

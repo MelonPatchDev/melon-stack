@@ -10,7 +10,9 @@ description: Turn an idea into a spec and buildable issues (briefs, tiers, depen
 The repo's `CLAUDE.md` wins over anything here. Design lives in **records**, not the repo (`melon records` says where): the spec in a parent **work item**, settled decisions in the **decision log**, the order in **direction**.
 
 ## Mode
-- **With the user:** use `grilling`. Facts come from the code, decisions from the user.
+- **With the user** (you're the **designer**): use `grilling`. Facts come from the code, decisions from the user. An orchestrator may be running, so first read `melon status` and the open decision log, and design against the work in flight as well as `main`. You may refine an issue that's still `status:ready`; once it's `status:building`, a change is the orchestrator's checkpoint. Sign comments `[designer]`.
+  - **One request** ("users want X", a piece of feedback): keep it to one issue unless the design shows more. Scope is the point of the conversation: what it means for the app, what's in and out, and what done looks like.
+  - **A bug report:** reproduce it from the code, find the PR that introduced it (`git log -S`, `git blame`) and add `Caused by: #<pr>`; it's usually `tier:s`.
 - **Autonomous** (expanding an outline, or the user said "decide and flag"): settle each question yourself using the reasoning order in melon-mode, and label every consequential or hard-to-reverse answer `owner-review`, so the user can overrule it later without blocking now. No one is pushing back, so before you finish, look for what the outline didn't mention: the variants of each case, the constraints it assumed, every state transition, and what happens when data is missing or unknown.
 
 ## What the design must get right
@@ -25,7 +27,7 @@ The repo's `CLAUDE.md` wins over anything here. Design lives in **records**, not
 
 ## Write it down
 - **The spec** goes into one parent work item that every slice links to. Never commit it: once built, the code and tests are the spec.
-- **Each hard-to-reverse decision** gets a decision-log line: the decision, its basis, where it was argued, **where it will graduate** (a test, type, rule or reference doc), and the work item(s) it's for. A decision with no plausible graduation probably doesn't need logging.
+- **Each hard-to-reverse decision** goes in the decision log with `melon decision add`: the decision, its basis, where it was argued, **where it will graduate** (a test, type, rule or reference doc), and the work item(s) it's for. A decision with no plausible graduation probably doesn't need logging.
 
 ## Slice into issues
 - **One issue = one complete, user-visible slice** with its tests. Never split by layer. Split anything likely over ~3,000 changed lines (not counting fixtures).
@@ -33,8 +35,8 @@ The repo's `CLAUDE.md` wins over anything here. Design lives in **records**, not
 - **Labels:** `tier:*`, `area:*`, and `status:ready` once the brief is complete. Note any hotspot or migration slot each will hold.
 - **H issues** need no separate design agent: the H reviewer checks the brief against the code in its first phase.
 
-## Update direction
-Add the work to the direction record: where it sits, why, for which persona, the bets it rests on, and **what result would change the plan**.
+## Direction
+Fill the brief's **Asked for** line: who asked, why, and the urgency they stated. Place the work in the direction record if you can say where it sits and why (for which persona, the bets it rests on, **what result would change the plan**): `melon direction place #n --why "…" [--after #m]`, never a hand edit of the order. Otherwise leave it out, and `melon status` lists it for the orchestrator to place. Re-read an issue's labels just before refining its brief: `status:building` means a builder has it.
 
 ## Reply
-≤10 lines: the spec link, the issues with their tiers, the `owner-review` decisions, and the parked questions.
+≤10 lines: the spec link, the issues with their tiers, whether each is placed in the direction record, the `owner-review` decisions, and the parked questions.

@@ -1,30 +1,60 @@
 // melon records: where each record lives in this repo, as a table agents (and the agent map) use.
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { listOpenIssues } from '../lib/github.mjs';
+import { editIssueBody, listOpenIssues } from '../lib/github.mjs';
 import { decisionEntries, record, RECORDS, resolveRecords, SUPPORTED } from '../lib/records.mjs';
 
 /**
- * The decision log, read for gate and merge: { where, body, entries, issue? } or { error }.
- * An issue log can be edited by the CLI; a file log is in the repo and changes through a PR.
+ * A record held in one place (an issue or a file): { where, body, issue? | file? } or { error }.
+ * An issue record can be edited by the CLI; a file record is in the repo and changes through a PR.
  */
-export function readDecisionLog(config) {
+export function readRecord(config, name) {
   let r;
   try {
-    r = record(config, 'decisionLog');
+    r = record(config, name);
   } catch (err) {
     return { error: err.message };
   }
   if (r.kind === 'file') {
     const file = join(config.root, r.path);
     if (!existsSync(file)) return { error: `${r.path} is missing` };
-    const body = readFileSync(file, 'utf8');
-    return { where: r.path, body, entries: decisionEntries(body) };
+    return { where: r.path, file, body: readFileSync(file, 'utf8') };
   }
-  if (r.kind !== 'github-issue') return { error: `records.decisionLog.kind "${r.kind}" can't hold a decision log` };
+  if (r.kind !== 'github-issue') return { error: `records.${name}.kind "${r.kind}" isn't one issue or file` };
   const found = listOpenIssues(r.label, { body: true });
   if (found.length !== 1) return { error: `${found.length} open issues labelled \`${r.label}\` (want 1); run \`melon records --check\`` };
-  return { where: `#${found[0].number}`, issue: found[0].number, body: found[0].body ?? '', entries: decisionEntries(found[0].body) };
+  return { where: `#${found[0].number}`, issue: found[0].number, body: found[0].body ?? '' };
+}
+
+/** The decision log, read for gate and merge: a record plus its open entries. */
+export function readDecisionLog(config) {
+  const r = readRecord(config, 'decisionLog');
+  return r.error ? r : { ...r, entries: decisionEntries(r.body) };
+}
+
+const ATTEMPTS = 3;
+
+/**
+ * Rewrite a record from a fresh read. An issue body is replaced whole, so another writer's edit
+ * can land between the read and the write: after writing, re-read, and retry when `check` says the
+ * change didn't survive. `change(body)` returns { body, check(afterBody), ... } or { error }.
+ * Returns the change's result plus { where, tries }, or { error }.
+ */
+export function updateRecord(config, name, change) {
+  for (let tries = 1; tries <= ATTEMPTS; tries++) {
+    const rec = readRecord(config, name);
+    if (rec.error) return rec;
+    const next = change(rec.body);
+    if (next.error) return next;
+    if (rec.file) {
+      writeFileSync(rec.file, next.body);
+      return { ...next, where: rec.where, file: true, tries };
+    }
+    editIssueBody(rec.issue, next.body);
+    const after = readRecord(config, name);
+    if (!after.error && next.check(after.body)) return { ...next, where: rec.where, tries };
+  }
+  return { error: `another writer kept replacing it (${ATTEMPTS} tries); run it again` };
 }
 
 export const help = `melon records [--check]

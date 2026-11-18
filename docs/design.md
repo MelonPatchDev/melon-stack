@@ -38,7 +38,7 @@ idea ──melon-concept──▶ spec in a work item + sliced issues (briefs, t
 
 ## Design comes first, and is the cheapest place to spend
 Most expensive rework comes from a design question that nobody settled before a builder started. `melon-concept` runs before any builder:
-- **With the user:** a grilling loop. One question at a time, each with a recommended answer; facts come from the code, decisions come from the user.
+- **With the user:** a grilling loop, run by a **designer** session. One question at a time, each with a recommended answer; facts come from the code, decisions come from the user. The designer can run while the orchestrator works, so it first reads what's in flight (`melon status`, the open decision log) and designs against that, not just `main`.
 - **Autonomously:** the orchestrator asks itself the design questions, answers from the code and the reasoning order, and labels consequential answers `owner-review`.
 
 It grounds the design in the code on `main` (never memory), pins the domain language (glossary, edge-case scenarios), writes one spec at the right level of detail (specific for data, state and computation; directional for UI), designs related issues together, and slices the work into complete user-visible issues, each with a brief.
@@ -87,6 +87,7 @@ They're asked **where each role decides**, not filled in afterwards, because an 
 | Role | Owns | Doesn't do |
 |---|---|---|
 | **Owner** | direction, owner-only actions (money, accounts and keys, legal, commercial use, new user data), reading the daily log | approving individual PRs |
+| **Designer** | a request turned into work items with the user: what it means for the app, its scope, stories, acceptance criteria and a proposed tier (`melon-concept`) | starting agents; changing work already being built |
 | **Orchestrator** | what starts next, briefs, tiers, hotspot and migration slots, settling disagreements, running `melon merge`, keeping the records current | quality review: it never re-reviews code |
 | **Builder** | one issue (or one batch of S issues) from brief to merge-ready | changing paths it doesn't own; merging |
 | **Reviewer** (M, H) | the test plan (and, for H, the design check), then the verdict | writing the feature |
@@ -140,13 +141,13 @@ The codebase changes constantly, so docs that record *how it got here* go stale 
 
 | Record | Holds | Edited by |
 |---|---|---|
-| **work item** | one issue: brief, tier, `Depends on:`, the design discussion and spec | orchestrator, `melon-concept`; a builder adds only a `Caused by:` line to a bug |
-| **decision log** | **open** decisions for unfinished work, each with where it will graduate | orchestrator, and `melon-concept` while designing |
+| **work item** | one issue: brief, tier, `Depends on:`, the design discussion and spec | orchestrator, designer (until `status:building`); a builder adds only a `Caused by:` line to a bug |
+| **decision log** | **open** decisions for unfinished work, each with where it will graduate | any role, through `melon decision add` |
 | **owner list** | Needs you / Review later / Coming up / Done | orchestrator only |
 | **direction** | what's next and why (the body); orchestrator hand-offs (comments) | orchestrator; the owner freely |
 | **daily log** | one line per merge, with the measured ledger | `melon merge` |
 
-**Decisions graduate.** While work is in flight, its decisions live in the decision log so the builder, the reviewer and the orchestrator agree. When the work merges, each decision moves into the codebase:
+**Decisions graduate.** While work is in flight, its decisions live in the decision log so the builder, the reviewer and the orchestrator agree. Any role adds one with `melon decision add`, which numbers it and re-reads the log after writing: the log is one issue body, so two hand edits can share a `D<n>` or silently drop each other's row. `melon merge` removes graduated entries the same way, and `melon direction place` does it for the direction record's order, which designers and the orchestrator both write. When the work merges, each decision moves into the codebase:
 1. a test that fails if the decision is reversed, a type, or a lint or gate rule (strongest);
 2. a ground rule or a line in a reference doc;
 3. or nowhere, if the code already makes it obvious.
@@ -163,12 +164,14 @@ No ADRs, decision files, committed specs, roadmaps or enforcement tables in the 
 
 ## Orchestration that a fresh agent can pick up
 - **The direction record** holds the "why": the current milestone and its persona, the bets, why work is in this order, open questions, and **what each upcoming piece will teach us and how it could change the plan**. Finished milestones leave it.
-- **`melon status`** builds the live view from the tracker: what's in flight, what's ready (every dependency closed), what each item unlocks, hotspots and slots.
+- **`melon status`** builds the live view from the tracker: what's in flight, what's ready (every dependency closed), what each item unlocks, hotspots and slots. It lists ready work in the order the direction record's order section first mentions it, and ready work the record doesn't mention apart, so a ticket a designer filed mid-session gets placed rather than started by accident or forgotten.
 - **Hand-off:** each orchestrator session ends with a ≤15-line comment on the direction record.
 - **Cold-start check:** a new orchestrator first answers, from the records alone, *what starts next, why, and what would change the plan*. If it can't, fixing the direction record comes first.
 
 ## Measuring it
 `melon ledger <pr>` reads Claude Code's session transcripts, counts each API call once, attributes them to the PR's issues, and reports raw counts plus an input-equivalent total (cache reads 0.1×, cache writes 1.25× or 2×, at API list prices). Attribution works for subagents described as `builder #<n>` / `reviewer #<n>`, and for sessions on a branch named `<n>-…`. `melon merge` writes the measurement into the daily log.
+
+`melon ledger --since` adds what no PR carries: design sessions (top-level sessions that ran `melon-concept` or `grilling`) and the orchestrator's own, reported apart, so "design is the cheapest place to spend" is a number, not a claim.
 
 Transcripts exist only on the machine where a session ran, so run the ledger there. Compare per-PR totals before and after adoption; that decides whether this design works.
 

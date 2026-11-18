@@ -104,6 +104,95 @@ export function removeEntries(logBody, ids) {
     .join('\n');
 }
 
+// Any role may add a decision, so numbering and appending are scripted (`melon decision add`):
+// two agents picking the same D<n> by hand would attach graduations to the wrong entry.
+const NEXT_MARK = /<!--\s*melon:next-decision\s+D(\d+)\s*-->/;
+
+/** The next free id: past every open entry and past the high-water mark, so ids never repeat after graduation. */
+export function nextDecisionId(logBody) {
+  const open = decisionEntries(logBody).map((e) => Number(e.id.slice(1)));
+  const mark = Number(NEXT_MARK.exec(logBody ?? '')?.[1] ?? 0);
+  return `D${Math.max(mark, ...open.map((n) => n + 1), 1)}`;
+}
+
+/** One table cell: no pipes or line breaks, which would break the row. */
+const cell = (s) => String(s ?? '').replace(/\s*\n\s*/g, ' ').replace(/\|/g, '/').trim();
+
+/**
+ * The log body with a new row after the last table row (or a new table), and the high-water mark
+ * moved past it. Returns { body, id }.
+ */
+export function addDecision(logBody, { decision, basis, argued, graduates, forItems }) {
+  const id = nextDecisionId(logBody);
+  const row = `| ${id} | ${[decision, basis, argued, graduates].map(cell).join(' | ')} | ${forItems.map((n) => `#${n}`).join(', ')} |`;
+  const mark = `<!-- melon:next-decision D${Number(id.slice(1)) + 1} -->`;
+  const lines = (logBody ?? '').replace(NEXT_MARK, '').replace(/\s+$/, '').split('\n');
+  let last = -1;
+  lines.forEach((l, i) => {
+    if (/^\|.*\|\s*$/.test(l)) last = i;
+  });
+  if (last === -1) lines.push('', '| # | Decision | Basis | Argued in | Graduates to | For |', '|---|---|---|---|---|---|', row);
+  else lines.splice(last + 1, 0, row);
+  return { id, body: `${lines.join('\n').replace(/^\n+/, '')}\n\n${mark}\n` };
+}
+
+// The direction record's order lives in one section, the one whose heading says "order" ("## Why
+// this order"). Mentions elsewhere ("if #45 slips…") don't place an item. A record without that
+// section is read whole.
+const ORDER_HEADING = /^(#{1,6})\s.*\border\b/i;
+const ORDER_ITEM = /^\d+\.\s/;
+
+/** Line indexes [start, end) of the order section's body, or null. */
+function orderSection(lines) {
+  const start = lines.findIndex((l) => ORDER_HEADING.test(l));
+  if (start === -1) return null;
+  const level = ORDER_HEADING.exec(lines[start])[1].length;
+  let end = start + 1;
+  while (end < lines.length && !(/^(#{1,6})\s/.exec(lines[end])?.[1].length <= level)) end++;
+  return [start + 1, end];
+}
+
+/**
+ * Where each work item first appears in the direction record's order: Map(n → position). An item
+ * it never mentions hasn't been placed yet.
+ */
+export function directionOrder(body) {
+  const lines = stripComments(body).split('\n');
+  const [from, to] = orderSection(lines) ?? [0, lines.length];
+  const order = new Map();
+  for (const m of lines.slice(from, to).join('\n').matchAll(/#(\d+)/g)) {
+    const n = Number(m[1]);
+    if (!order.has(n)) order.set(n, order.size);
+  }
+  return order;
+}
+
+/**
+ * The direction body with "<k>. #n: <why>" in its order section: after the item that mentions
+ * #after, or last. Numbered items are renumbered. Returns { body } or { error }.
+ */
+export function placeInDirection(body, n, { after, why }) {
+  if (directionOrder(body).has(n)) return { error: `#${n} is already in the direction order` };
+  const lines = (body ?? '').replace(/\s+$/, '').split('\n');
+  const section = orderSection(lines);
+  const item = `1. #${n}: ${cell(why)}`;
+  if (!section) return { body: `${lines.join('\n')}\n\n## Why this order\n${item}\n` };
+  const [from, to] = section;
+  const items = [];
+  for (let i = from; i < to; i++) if (ORDER_ITEM.test(lines[i])) items.push(i);
+  let at = items.length ? items[items.length - 1] + 1 : from;
+  if (after) {
+    const ref = items.find((i) => new RegExp(`#${after}\\b`).test(lines[i]));
+    if (ref === undefined) return { error: `#${after} isn't in the direction order` };
+    at = ref + 1;
+    while (at < to && /^\s+\S/.test(lines[at])) at++; // keep the item's own indented lines with it
+  }
+  lines.splice(at, 0, item);
+  let k = 0;
+  for (let i = from; i <= to; i++) if (ORDER_ITEM.test(lines[i] ?? '')) lines[i] = lines[i].replace(/^\d+\./, `${++k}.`);
+  return { body: `${lines.join('\n')}\n` };
+}
+
 /** `D<n> → <where>` (or `->`) lines in a PR body: Map(id → target text). */
 export function graduations(body) {
   const out = new Map();

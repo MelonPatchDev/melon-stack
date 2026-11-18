@@ -2,7 +2,7 @@
 // melon: the scripted half of melon-stack. Node 22, no dependencies; shells out to git and gh.
 import { loadConfig } from './lib/config.mjs';
 
-const COMMANDS = ['check', 'gate', 'focus', 'merge', 'ledger', 'escapes', 'records', 'status', 'batch', 'labels', 'audit', 'init'];
+const COMMANDS = ['check', 'gate', 'focus', 'merge', 'ledger', 'escapes', 'records', 'decision', 'direction', 'status', 'batch', 'labels', 'audit', 'init'];
 const NO_CONFIG = new Set(['init']);
 
 export function parseArgs(argv) {
@@ -22,7 +22,7 @@ export function parseArgs(argv) {
   return { positional, flags };
 }
 
-const VALUE_FLAGS = new Set(['record', 'ledger', 'area', 'min', 'limit', 'to', 'projects', 'since', 'until', 'settle']);
+const VALUE_FLAGS = new Set(['record', 'ledger', 'area', 'min', 'limit', 'to', 'projects', 'since', 'until', 'settle', 'for', 'text', 'basis', 'argued', 'graduates', 'after', 'why']);
 
 async function cli(argv) {
   const [name, ...rest] = argv;

@@ -9,8 +9,8 @@
 
 | Record | Holds | Edited by |
 |---|---|---|
-| **work item** | one issue: brief, tier, dependencies, its design discussion | you, `melon-concept`; a builder adds only a `Caused by:` line to a bug |
-| **decision log** | open decisions for unfinished work | you, and `melon-concept` while designing |
+| **work item** | one issue: brief, tier, dependencies, its design discussion | you, a designer (until `status:building`); a builder adds only a `Caused by:` line to a bug |
+| **decision log** | open decisions for unfinished work | any role, through `melon decision add` |
 | **owner list** | Since you last looked / Needs you / Review later / Coming up / Done | you only |
 | **direction** | what's next and why; hand-offs as comments | you; the owner freely |
 | **daily log** | one line per merge, with the ledger | `melon merge` |
@@ -27,7 +27,8 @@
 4. After any context compaction, re-read the direction record, `melon status` and your last hand-off before acting.
 
 ## 1. Choose the next work
-- Take the order in the direction record. `melon status` lists what's **ready** (every `Depends on:` closed) and what each item unlocks. Fill up to **3 builders** on parallel work. It's a rolling priority order, not lockstep batches: whenever a builder frees up, start the highest-priority ready issue.
+- Take the order in the direction record. `melon status` lists what's **ready** (every `Depends on:` closed), in that order, and what each item unlocks. Fill up to **3 builders** on parallel work. It's a rolling priority order, not lockstep batches: whenever a builder frees up, start the highest-priority ready issue.
+- **Ready, not in direction yet** (a designer may file work while you run): before starting anything, place each item with `melon direction place #n --why "…" [--after #m]`, or say in the record why it waits. The brief's **Asked for** line carries the urgency the requester stated; it's input, not an order.
 - `melon status` shows the hotspots and migration each open PR holds. Don't start an issue that would modify a held hotspot, and allow **one migration in flight**.
 - `parked` PRs are invisible to scheduling. Leave them alone.
 - **Read the System lines** `melon status` prints for open PRs. Two PRs adding a place for the same state, or two contracts for the same thing, is a collision no hotspot check sees: sequence them, or settle which one wins, before either merges.
@@ -44,6 +45,8 @@
 
 **Launch with the agent types:** builders with `subagent_type: "melon-stack:melon-builder"`, reviewers with `"melon-stack:melon-reviewer"`. Their hard limits (own worktree and ports, no force-push, never merge, never poll) load only that way.
 
+**Set the issue to `status:building` first,** then launch: a designer may refine a `status:ready` brief, and the label is what tells it the brief is now taken.
+
 **Every prompt is self-contained.** The agent starts cold. A **builder** prompt carries:
 - the setup: worktree path (from the latest `main`), ports, database name, scratch folder;
 - the issue number and tier, and "follow melon-mode → build + <playbook>";
@@ -54,8 +57,6 @@
 A **reviewer (M/H)** is launched at the same time:
 - read-only, no worktree, reads through `gh` and `git`, own scratch folder;
 - "Review #<n> (tier:<t>). Phase 1: post the TEST PLAN on the issue now. Phase 2 starts when I send the PR number."
-
-Then set the issue to `status:building`.
 
 **Agents never wait inside a turn; you relay.** A background agent can't see a new GitHub comment until someone wakes it, and polling `gh` burns a call each time. So:
 1. **M/H:** launch both at once. The builder does only the no-code steps (understand, branch, draft PR, settle the design) and ends its turn with `READY FOR PLAN`. The reviewer posts `TEST PLAN` and ends its turn.
@@ -74,7 +75,7 @@ An agent that ends its turn waiting on something names exactly what it's waiting
 - **Checkpoints:** decide them yourself, using the reasoning order (melon-mode §3). Record the decision on the PR (Decisions). Label consequential, controversial or hard-to-reverse choices `owner-review`.
 - **Owner-only actions** (money, accounts and keys, legal notices, commercial use, new third parties or new user data): label `needs-owner` and add the exact request under **Needs you** in the owner list (`templates/owner-list.md`). Build the recommended option behind config so review can still go ahead.
 - **The owner list is yours alone:** edit it in place; there are no copies elsewhere. Consequential decisions go under **Review later**. Record each answer where it applies (the work item, the decision log) before moving it to Done.
-- **New decisions** that outlive the current conversation (a checkpoint ruling, a design call that later issues depend on) get a line in the **decision log**, with where each will graduate and **the work item it's for** (`#n` in the last column). `melon gate` holds any PR that closes that work item until it names where the decision now lives. **When an outside source blocks the work, ask on the first confirmed failure;** don't retry for days first.
+- **New decisions** that outlive the current conversation (a checkpoint ruling, a design call that later issues depend on) go in the **decision log** with `melon decision add --for <work item>`, with where each will graduate. `melon gate` holds any PR that closes that work item until it names where the decision now lives. **When an outside source blocks the work, ask on the first confirmed failure;** don't retry for days first.
 - **Blocked work:** when a builder reports it's blocked by an outside source or an unfinished dependency, label the issue `status:blocked` (replacing `status:building`) and name the blocker on the issue. Swap it back when the blocker clears. `melon status` shows the label.
 - **Milestone hand-backs:** builders on medium or large briefs hand back after each milestone. Read the token count each agent reports when it stops. Under ~200k, resume the same agent with "go". Over, start a fresh one of the same role with the pickup playbook. Builders can't see their own context size; you can.
 

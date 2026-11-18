@@ -109,9 +109,11 @@ Companions we recommend but don't bundle: Anthropic's [`frontend-design`](https:
 | `melon gate <pr> [--fix]` | the mechanical merge conditions: tier, PR sections, TODOs, hotspots, migration slot, clean merge, decisions graduated, test plan and verdict |
 | `melon focus <pr> [--diff]` | the files a reviewer must read in depth, and their diff alone |
 | `melon merge <pr>` | gate → CI per tier → squash → daily-log line with the measured ledger → graduated decisions leave the log → batch CI on `main` |
-| `melon ledger <pr>` · `--since <date>` | what the PR really cost, by role, from the session transcripts · over a period, work vs. overhead (the orchestrator's own sessions), per merged PR |
+| `melon ledger <pr>` · `--since <date>` | what the PR really cost, by role, from the session transcripts · over a period, work vs. overhead (design and the orchestrator's own sessions, split), per merged PR |
 | `melon escapes [--since <date>] [--settle <days>] [--cost]` | per tier, how many settled merged PRs later needed a fix (`Caused by: #<pr>`), with median cost beside it |
-| `melon status` | the live board: in flight, ready (dependencies closed), what each item unlocks, hotspots |
+| `melon status` | the live board: in flight, ready (dependencies closed) in the direction record's order, ready work not placed yet, what each item unlocks, hotspots |
+| `melon decision add --for <#n> --text "…"` | adds an open decision to the log with the next free `D<n>`; safe with several writers |
+| `melon direction place <#n> --why "…" [--after <#m>]` | puts a work item in the direction record's order; safe with several writers |
 | `melon records [--check]` | where each record lives in this repo (decision log, owner list, direction, …) |
 | `melon batch [--create]` | groups small bugs by area into one maintenance issue |
 | `melon audit <name>` | flags files for an audit: `state-machines`, `style-drift`, `react-composition`, `privacy`, `docs-drift` |

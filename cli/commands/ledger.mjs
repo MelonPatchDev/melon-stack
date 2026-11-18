@@ -16,8 +16,10 @@ melon ledger --since YYYY-MM-DD [--until YYYY-MM-DD] [--projects <dir>]
   --line      print only the daily-log ledger text (melon merge uses this)
   --since     the period view: sessions started in the window, split into work attributed to
               issues and overhead (the orchestrator's own sessions, design and other chats with
-              no issue), with both divided by the PRs merged in the window. Per-PR ledgers leave
-              overhead out; this is where it shows.
+              no issue), with both divided by the PRs merged in the window. Overhead is split by
+              role: a top-level session that ran melon-concept or grilling is design, one that
+              ran melon-mode is the orchestrator. Per-PR ledgers leave overhead out; this is
+              where it shows.
   --projects  transcript root (default ~/.claude/projects)`;
 
 export function ledgerFor(number, config, projectsDir) {
@@ -71,6 +73,11 @@ function periodReport(args, config) {
   console.log(`Sessions started ${since}${args.flags.until ? ` to ${until}` : ''}: ${merged} PR(s) merged`);
   console.log(`  attributed to issues  ${fmt(a).padStart(7)} input-eq  (${attributed.length} transcripts)  per merged PR ${per(a)}`);
   console.log(`  overhead              ${fmt(o).padStart(7)} input-eq  (${overhead.length} transcripts)  per merged PR ${per(o)}`);
+  const byRole = new Map();
+  for (const t of overhead) byRole.set(t.role, [...(byRole.get(t.role) ?? []), t]);
+  for (const [role, list] of [...byRole].sort((x, y) => totalInputEq(y[1]) - totalInputEq(x[1]))) {
+    console.log(`    ${role.padEnd(18)} ${fmt(totalInputEq(list)).padStart(7)} input-eq  (${list.length} transcripts)`);
+  }
   console.log(`  overhead share        ${a + o ? Math.round((100 * o) / (a + o)) : 0}%`);
   return 0;
 }

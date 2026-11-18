@@ -72,7 +72,10 @@ if (group === 'api') {
   save();
 } else if (group === 'issue' && cmd === 'edit') {
   issue().labels.push(...flags('add-label'));
-  if (flag('body') !== undefined) issue().body = flag('body');
+  // raceOnEdit[n]: another writer's whole-body edit lands right after this one, once.
+  const race = state.raceOnEdit?.[num];
+  if (race !== undefined) delete state.raceOnEdit[num];
+  if (flag('body') !== undefined) issue().body = race ?? flag('body');
   save();
 } else if (group === 'issue' && cmd === 'close') {
   issue().state = 'CLOSED';

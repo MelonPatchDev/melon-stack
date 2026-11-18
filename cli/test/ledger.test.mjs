@@ -28,6 +28,9 @@ test('attribute: subagent descriptions, then branch names', () => {
   assert.deepEqual(attribute({ description: 'Cold review of milestone issues' }), { issues: [], role: 'reviewer' });
   assert.deepEqual(attribute({ description: 'Research hosting stack options' }), { issues: [], role: 'other' });
   assert.deepEqual(attribute({ branches: ['main', '132-bond-wording'] }), { issues: [132], role: 'builder' });
+  assert.deepEqual(attribute({ branches: ['main'], skills: ['grilling', 'melon-mode'] }), { issues: [], role: 'design' });
+  assert.deepEqual(attribute({ branches: ['main'], skills: ['melon-mode'] }), { issues: [], role: 'orchestrator' });
+  assert.deepEqual(attribute({ branches: ['132-x'], skills: ['melon-concept'] }), { issues: [132], role: 'builder' });
   assert.deepEqual(attribute({ branches: ['main'] }), { issues: [], role: 'session' });
 });
 
@@ -61,4 +64,12 @@ test('period splits attributed work from overhead; forPr matches issues or branc
   assert.equal(p.attributed.length, 1);
   assert.equal(p.overhead.length, 2);
   assert.equal(forPr(all, { issues: [5], branch: '6-x' }).length, 2);
+});
+
+test('summarize records the skills a session ran, by tool call or slash command', () => {
+  const text = [
+    JSON.stringify({ type: 'user', message: { content: '<command-name>/melon-stack:melon-concept</command-name>' } }),
+    JSON.stringify({ type: 'assistant', message: { id: 'a', content: [{ type: 'tool_use', name: 'Skill', input: { skill: 'grilling' } }], usage: { input_tokens: 1 } } }),
+  ].join('\n');
+  assert.deepEqual([...summarize(text).skills].sort(), ['grilling', 'melon-concept']);
 });

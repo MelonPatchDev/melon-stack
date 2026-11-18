@@ -2,6 +2,7 @@
 <!-- Written once by the orchestrator (or melon-concept), at design time. The builder starts from this instead of reading every doc.
 S tier: Goal, Done check and Owned paths are enough; add other fields only when they apply. -->
 **Goal:** <!-- one or two sentences: what users get, and for which persona -->
+**Asked for:** <!-- who asked, why, and the urgency they stated; input for the orchestrator's order, not an order. Omit for work the orchestrator planned itself -->
 **Done check:** <!-- something that can pass or fail: the tests, a command and its expected output, a budget -->
 **Tier:** tier:<s|m|h>, because <!-- the path or risk that sets it -->
 **Expected size:** <!-- small | medium | large; medium and large builds hand back at each milestone -->

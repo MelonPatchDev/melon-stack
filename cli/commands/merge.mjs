@@ -2,12 +2,12 @@
 // The person or agent running it makes no quality judgment; the gate and CI do.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
-import { ciState, comment, editIssueBody, getIssue, getPr } from '../lib/github.mjs';
+import { ciState, comment, getIssue, getPr } from '../lib/github.mjs';
 import { causedBy, closedIssues, impactSummary, ledgerLine as bodyLedger, localDate, tierFromLabels } from '../lib/rules.mjs';
 import { gh, ghJson, git, tryRun } from '../lib/sh.mjs';
-import { graduations, record, removeEntries } from '../lib/records.mjs';
+import { decisionEntries, graduations, record, removeEntries } from '../lib/records.mjs';
 import { evaluate } from './gate.mjs';
-import { readDecisionLog } from './records.mjs';
+import { readDecisionLog, updateRecord } from './records.mjs';
 import { ledgerFor, ledgerLine } from './ledger.mjs';
 
 /** The measured ledger from transcripts; never blocks a merge. */
@@ -51,8 +51,11 @@ function graduate(pr, config) {
   const present = ids.filter((id) => dl.entries.some((e) => e.id === id));
   if (!present.length) return console.log(`Decision log ${dl.where}: nothing to remove for ${ids.join(', ')}.`);
   if (!dl.issue) return console.log(`Decision log ${dl.where}: remove ${present.join(', ')} (graduated in #${pr.number}).`);
+  // Removed from a fresh read and checked after, so a decision another role added meanwhile survives.
+  const gone = (body) => !decisionEntries(body).some((e) => present.includes(e.id));
   try {
-    editIssueBody(dl.issue, removeEntries(dl.body, present));
+    const r = updateRecord(config, 'decisionLog', (body) => ({ body: removeEntries(body, present), check: gone }));
+    if (r.error) throw new Error(r.error);
     console.log(`Decision log ${dl.where}: ${present.join(', ')} graduated and removed.`);
   } catch (err) {
     console.log(`Decision log ${dl.where} not updated (${err.message.split('\n')[0]}); remove ${present.join(', ')} by hand.`);

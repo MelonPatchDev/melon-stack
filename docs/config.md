@@ -18,7 +18,6 @@ Lives at the target repo's root. Every field is optional except where a command 
 | `migrations.paths` | `[]` | gate, status | adding a file here takes the single migration slot |
 | `pr.requiredSections` | Plan, State, Data, Impact, Decisions, Unconfirmed facts | gate | each must appear as a heading (`## X`) or bold label (`**X:**`) |
 | `pr.requiredSectionsByTier` | `{ "s": ["Plan", "State", "Impact"] }` | gate | per-tier override of `pr.requiredSections`; S skips Data, Decisions and Unconfirmed facts |
-| `pr.changeQuestions` | S: Idea, System; M/H: Idea, System, Patterns, Long term | gate | the bold labels in Impact each tier must answer (an answer may sit on the line after the label) |
 | `gate.ownerReviewBlocks` | `false` | gate | `true`: an `owner-review` label holds the merge until the owner removes it (for repos where rule changes must wait for the owner) |
 | `pr.impactLabel` | `Idea` | merge | the bold label whose first sentence becomes the daily-log line |
 | `pr.changeQuestions` | S: `Idea`, `System`; M and H: `Idea`, `System`, `Patterns`, `Long term` | gate, status | bold labels each tier must answer in the PR (a placeholder comment counts as blank); `melon status` prints each open PR's `System` line |
@@ -65,6 +64,8 @@ Override only what differs, for example `"records": { "ownerList": { "label": "o
 | `\| D<n> \| … \| #<work item> \|` | decision-log record, a table row; the last cell names the work items | gate, merge |
 | `D<n> → <where>` (or `->`) | PR body, under Decisions | gate (a file it names must exist at the head, and the line if given); merge removes `D<n>` from the decision log |
 | `Caused by: #<pr>` (or `Regressed in`, `Introduced in`) | a bug issue | merge (tags the fix in the daily log), escapes |
+| `#n` in the order section (the heading that says "order"; the whole body if there's none), outside comments | direction record | status: ready work is listed by first mention; unmentioned ready work is listed apart. `melon direction place` adds `<k>. #n: <why>` there |
+| `<!-- melon:next-decision D<n> -->` | decision-log record | `melon decision add` (the next id; written by it, so ids don't repeat after graduation) |
 
 A recorded SHA covers the PR head when the head is that commit, or when the PR's only commits since are merges; commits that arrive from `main` by merging it in don't count, so merging `main` doesn't cost a new review.
 
