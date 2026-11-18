@@ -1,6 +1,6 @@
 ---
 name: melon-verify
-description: Generate, or keep honest, a repo-local verify-<app> skill that launches the real app, drives a feature the way a user does, and captures text evidence, plus a feature map of what to drive. Use for "create a verify skill", "how do agents drive this app", when acceptance criteria are UI or CLI flows with no scripted way to prove them, or for a maintain pass after the app changed.
+description: Create or maintain a repo-local verify-<app> skill that launches and drives the real app and captures text evidence. Use for "create a verify skill", "how do agents drive this app", UI or CLI acceptance criteria nothing can prove yet, or a maintain pass.
 ---
 
 # melon-verify

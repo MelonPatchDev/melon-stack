@@ -1,6 +1,6 @@
 ---
 name: interrogate
-description: Adversarial review - two or three adversaries try to break a change or a design, and a finding survives only when a run proves it. Use for "interrogate", "adversarial review", "tear this apart", "find blind spots", an H-tier change whose safety the reviewer couldn't prove, or a tier whose escape rate is climbing. Reports findings; fixes nothing.
+description: Adversarial review - 2-3 adversaries try to break a change or design; only run-proven findings survive. Use for "interrogate", "adversarial review", "tear this apart", an H safety fact no test can prove, or a tier whose escape rate climbs.
 ---
 
 # interrogate

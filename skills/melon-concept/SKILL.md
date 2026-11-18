@@ -1,6 +1,6 @@
 ---
 name: melon-concept
-description: Turn an idea into a spec and buildable issues - settle the design (with the user via grilling, or autonomously), write the spec into a work item, and slice it into issues with briefs, tiers and dependencies. Use for "let's design X", "spec out M2", "turn this into issues", "plan the next milestone", or when the orchestrator meets an outline issue.
+description: Turn an idea into a spec and buildable issues (briefs, tiers, dependencies), with the user or autonomously. Use for "let's design X", "spec out M2", "turn this into issues", "plan the next milestone", or an outline issue with no brief.
 ---
 
 # melon-concept

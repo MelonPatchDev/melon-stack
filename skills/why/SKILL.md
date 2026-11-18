@@ -1,6 +1,6 @@
 ---
 name: why
-description: Answer "why is X this way" from the record, not the code - the commits, PRs and issues that introduced and changed it. Use for "why does X work this way", "why did we pick Y", "what decision does this test protect", regressions, or before reversing something that looks wrong. Use an Explore subagent for "how does X work".
+description: Answer why code is the way it is from its commits, PRs and issues, not the code. Use for "why does X work this way", "why did we pick Y", "what decision does this test protect", regressions, or before reversing something.
 ---
 
 # why

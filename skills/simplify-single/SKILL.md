@@ -1,6 +1,7 @@
 ---
 name: simplify-single
 description: Single-agent /simplify. Review changed code (a diff, branch or PR) for reuse, simplification, efficiency and altitude, then apply the fixes, using AT MOST ONE subagent (on Opus). Use instead of the built-in /simplify, which fans out to 4 parallel agents, when token budget matters.
+disable-model-invocation: true
 ---
 
 # simplify-single

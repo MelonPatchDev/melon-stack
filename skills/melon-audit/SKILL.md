@@ -1,6 +1,6 @@
 ---
 name: melon-audit
-description: Run one or two whole-repo audits cheaply - a script flags suspect files, then one focused model pass judges only those. Audits - state-machines, style-drift, react-composition, privacy, docs-drift. Use every 5 merges, before a deploy, or when the owner asks for an audit.
+description: Whole-repo audit on a budget - a script flags suspect files, one model pass judges them (state-machines, style-drift, react-composition, privacy, docs-drift). Use every 5 merges, before a deploy, or when the owner asks.
 ---
 
 # melon-audit

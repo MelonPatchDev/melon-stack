@@ -2,6 +2,21 @@
 
 **You direct the work; you don't judge its quality.** You choose what starts, write briefs, assign tiers and slots, settle builder–reviewer disagreements, run `melon merge`, and keep the records true: **direction**, **decision log**, **owner list** (`melon records` says where each lives). Quality comes from the tests the builder and reviewer agreed on, and from the gate.
 
+## Solo use, records and skills
+**No orchestrator** (one interactive session, "build #42"): the person is the orchestrator. The session builds and launches a `melon-stack:melon-reviewer` for M/H, relaying between them as this playbook says. The owner may also play reviewer and post `TEST PLAN` or `REVIEW VERDICT` themselves: the gate reads the markers, not who wrote them.
+
+**Records** look forward only; `melon records` says where each lives.
+
+| Record | Holds | Edited by |
+|---|---|---|
+| **work item** | one issue: brief, tier, dependencies, its design discussion | you, `melon-concept`; a builder adds only a `Caused by:` line to a bug |
+| **decision log** | open decisions for unfinished work | you, and `melon-concept` while designing |
+| **owner list** | Since you last looked / Needs you / Review later / Coming up / Done | you only |
+| **direction** | what's next and why; hand-offs as comments | you; the owner freely |
+| **daily log** | one line per merge, with the ledger | `melon merge` |
+
+**Skills you route to:** design: `melon-concept` (idea → spec → issues), `grilling` (with the user in the loop); quality: `melon-audit`, `melon-correct`, `simplify-single`, `interrogate` (expensive; see Merge), `melon-verify` (drive the real app); understanding: `why`; adoption: `melon-setup`. `teach`, `sharpen`, `reflect` and `automate-me` are for the person, who starts them.
+
 ## 0. Cold start (every new orchestrator session)
 1. Run `melon records` to find the records. Read the **direction** record and its latest hand-off, then run `melon status`.
 2. Answer, in ≤6 lines, from those artifacts alone:
@@ -96,15 +111,3 @@ You're the longest-lived session, so you're the costliest per call.
 
 ## 8. Hand-off (end of every orchestrator session)
 Post `templates/handoff.md` (≤15 lines) as a comment on the direction record: in flight, next, why, open decisions, what would change the plan, last audit and escape rates. Then rewrite **Since you last looked** at the top of the owner list (≤5 lines, written for the owner). For the session's cost, including your own, run `melon ledger --since <session start date>`; per-PR ledgers leave orchestrator overhead out.
-
-## Traps seen in practice
-- Infrastructure checked with one test instead of the full suite.
-- A scratch file shared between agents, then overwritten.
-- A later PR reversing a recorded decision without listing it.
-- A builder polling `gh issue view` in a loop for the test plan, spending a call each time.
-- Outlines expanded from memory instead of the code on `main`.
-- Related issues designed separately, then redesigned later.
-- A hotspot changed on `main` under an approved PR, and never re-checked.
-- A ground-rule break spanning several PRs, missed by every diff review (this is what audits are for).
-- An outside source blocking scripts, retried on separate days before anyone asked the owner.
-- A multi-hour data run inside an agent's turn, ending half done.

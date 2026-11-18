@@ -1,6 +1,6 @@
 ---
 name: melon-mode
-description: Entry point for agent work in a melon-stack repo. Use at the start of any orchestrator, builder or reviewer task; it sets the tier, picks the playbook, and holds the reasoning order and principles. Trigger on "melon-mode", "orchestrate", "build issue #n", "review PR #n", "pick up PR #n", "pause".
+description: Shared rules and the playbook router for agent work in a melon-stack repo. Use at the start of any orchestrator, builder or reviewer task, and for "orchestrate", "build issue #n", "review PR #n", "pick up PR #n", "pause".
 ---
 
 # melon-mode
@@ -8,56 +8,23 @@ description: Entry point for agent work in a melon-stack repo. Use at the start 
 The repo's `CLAUDE.md` and ground rules win over anything here. The scripted half is the `melon` CLI (`melon <cmd> --help`; most repos expose it as `pnpm melon` or `npm run melon --`). Budget is the constraint: do the useful work with the fewest tokens.
 
 ## 1. Know your role and the tier
-- **Role:**
-  - **orchestrator:** chooses what starts, writes briefs, assigns tiers and slots, runs `melon merge`; never reviews code;
-  - **builder:** one issue, or one maintenance batch;
-  - **reviewer:** test plan, then verdict; never writes the feature.
-
-  Design work before any issue exists uses the `melon-concept` skill.
-
-  **No orchestrator** (one interactive session, "build #42"): the person is the orchestrator. The session builds and launches a `melon-stack:melon-reviewer` for M/H, relaying between them as the orchestrate playbook says. The owner may also play reviewer and post `TEST PLAN` or `REVIEW VERDICT` themselves: the gate reads the markers, not who wrote them.
+- **Role:** the **orchestrator** chooses what starts, writes briefs, assigns tiers and runs `melon merge`, and never reviews code; a **builder** builds one issue or one maintenance batch; a **reviewer** writes the test plan, then the verdict, and never writes the feature. With no orchestrator (one interactive session), you are it: read the orchestrate playbook.
 - **Tier** is the issue's `tier:s|m|h` label, set by the orchestrator. The change can only raise it (`melon gate --fix`), and only the orchestrator lowers it.
   - **S:** small changes (no M/H path, no held hotspot, ≤ `sMaxChurn` lines of code). No reviewer agent and no PR CI; `melon check --record` is the evidence. A short brief and fewer PR sections (Plan, State, Impact).
   - **M:** the default. Test plan agreed before code, one review pass, CI once.
   - **H:** only where a break would be systemic and hard to undo (formula code, stored format, auth). As M, plus a design check before building, an in-depth review of the focus files (`melon focus`), golden tests, and `owner-review` for rule changes.
 
 ## 2. Pick the playbook
-Read only the playbook you need:
+If your prompt names your playbooks, read those and skip this. Otherwise read only the one you need, from `${CLAUDE_SKILL_DIR}/playbooks/`:
+- `orchestrate.md`: choosing work, launching agents, merging, hand-off; also solo use, the records, and the other skills;
+- `build.md` for any build, plus one for the task: `bug-fix.md`, `feature.md`, `refactor.md`, `systemic.md` (formula code, stored format, auth), `maintenance-batch.md` or `perf.md` (none for docs or copy);
+- `review.md`: the test plan or the verdict;
+- `pickup-and-pause.md`: resuming someone's work, or stopping cleanly.
 
-| Situation | Playbook |
-|---|---|
-| Orchestrating: choosing work, launching agents, merging, hand-off | [orchestrate](${CLAUDE_SKILL_DIR}/playbooks/orchestrate.md) |
-| Building any issue: the shared steps | [build](${CLAUDE_SKILL_DIR}/playbooks/build.md), plus the one for the task below (none for docs or copy) |
-| A defect | [bug-fix](${CLAUDE_SKILL_DIR}/playbooks/bug-fix.md) |
-| New or changed behaviour | [feature](${CLAUDE_SKILL_DIR}/playbooks/feature.md) |
-| Structure only, zero behaviour change | [refactor](${CLAUDE_SKILL_DIR}/playbooks/refactor.md) |
-| Formula code, a stored format or auth (H) | [systemic](${CLAUDE_SKILL_DIR}/playbooks/systemic.md) |
-| A batch of small fixes | [maintenance-batch](${CLAUDE_SKILL_DIR}/playbooks/maintenance-batch.md) |
-| Measured slowness or a time budget | [perf](${CLAUDE_SKILL_DIR}/playbooks/perf.md) |
-| Reviewing (test plan or verdict) | [review](${CLAUDE_SKILL_DIR}/playbooks/review.md) |
-| Resuming someone's work, or stopping cleanly | [pickup-and-pause](${CLAUDE_SKILL_DIR}/playbooks/pickup-and-pause.md) |
-
-Other skills:
-- design: `melon-concept` (idea → spec → issues), `grilling` (with the user in the loop);
-- quality: `melon-audit`, `melon-correct`, `simplify-single`, `interrogate` (expensive; see the review playbook), `melon-verify` (drive the real app);
-- understanding: `why` (the reasoning behind code, from its PRs and issues);
-- for the person, not agents: `teach`, `sharpen`, `reflect`, `automate-me`;
-- adoption: `melon-setup`.
-
-**Templates** named in the playbooks (`templates/<name>.md`) are in `${CLAUDE_PLUGIN_ROOT}/templates/`: brief, test-plan, review-verdict, pr-body, handoff, direction, decision-log, owner-list, agent-map.
+Any role may use `why` (the reasoning behind code, from its PRs and issues) and the repo's `verify-<app>` skill when it has one. **Templates** named in the playbooks (`templates/<name>.md`) are in `${CLAUDE_PLUGIN_ROOT}/templates/`.
 
 ## Records, and why the code is the documentation
-The process runs on **records**, named by role. `melon records` (or the agent map) says where each one lives in this repo; by default they're GitHub issues. Records look **forward** only:
-
-| Record | Holds | Edited by |
-|---|---|---|
-| **work item** | one issue: brief, tier, dependencies, its design discussion | orchestrator, `melon-concept`; a builder adds only a `Caused by:` line to a bug |
-| **decision log** | open decisions for unfinished work | orchestrator, and `melon-concept` while designing |
-| **owner list** | Needs you / Review later / Coming up / Done | orchestrator only |
-| **direction** | what's next and why; hand-offs as comments | orchestrator; the owner freely |
-| **daily log** | one line per merge, with the ledger | `melon merge` |
-
-Once work merges, **the code and its tests are the record of what was built.** Each decision it implemented *graduates* into the codebase (a test, a type, a lint or gate rule, a ground rule, or a line in a reference doc) and leaves the decision log. The reasoning stays on the issue or PR where it was argued. Never commit decision logs, ADRs, feature specs or roadmaps to the repo. The only docs in the repo describe what's true now: `CLAUDE.md`, the agent map, the glossary, the rules doc.
+The process runs on forward-looking **records** (work items, the decision log, the owner list, direction, the daily log); `melon records` or the agent map says where each lives, and the orchestrate playbook says who edits which. Once work merges, **the code and its tests are the record of what was built.** Each decision it implemented *graduates* into the codebase (a test, a type, a lint or gate rule, a ground rule, or a line in a reference doc) and leaves the decision log. The reasoning stays on the issue or PR where it was argued. Never commit decision logs, ADRs, feature specs or roadmaps to the repo. The only docs in the repo describe what's true now: `CLAUDE.md`, the agent map, the glossary, the rules doc.
 
 ## 3. Reasoning order (what "correct" means)
 Every judgment call, by any role, rests on the first of these that settles it:
